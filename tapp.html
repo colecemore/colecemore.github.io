@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenStore</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        header {
+            background-color: #007bff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .category-section {
+            margin-bottom: 40px;
+        }
+
+        .category-title {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .app-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .app {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px;
+            padding: 20px;
+            width: 200px;
+            text-align: center;
+        }
+
+        .app img {
+            max-width: 100%;
+        }
+
+        .app h2 {
+            margin-top: 10px;
+            font-size: 18px;
+        }
+
+        .installers { background-color: #f8d7da; }
+        .emulators { background-color: #d4edda; }
+        .cloud-gaming { background-color: #cce5ff; }
+        .cloud-apps { background-color: #fff3cd; }
+
+        .instruction-panel {
+            display: none;
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 10px;
+        }
+
+        #guideButton {
+            margin-bottom: 20px;
+        }
+
+        .download-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .download-button:hover {
+            background-color: #0056b3;
+        }
+
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            z-index: 1000;
+        }
+
+        .close-popup {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: transparent;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>OpenStore</h1>
+    </header>
+
+    <!-- Button to show instructions -->
+    <button id="guideButton">Show Installation Guide</button>
+
+    <div class="category-section">
+        <div id="installers" class="app-list">
+            <h2 class="category-title">Installers</h2>
+            <!-- Installers will be dynamically added here -->
+        </div>
+    </div>
+    <div class="category-section">
+        <div id="emulators" class="app-list">
+            <h2 class="category-title">Emulators</h2>
+            <!-- Emulators will be dynamically added here -->
+        </div>
+    </div>
+    <div class="category-section">
+        <div id="cloud-gaming" class="app-list">
+            <h2 class="category-title">Cloud Gaming</h2>
+            <!-- Cloud gaming apps will be dynamically added here -->
+        </div>
+    </div>
+    <div class="category-section">
+        <div id="cloud-apps" class="app-list">
+            <h2 class="category-title">Cloud Apps</h2>
+            <!-- Cloud apps will be dynamically added here -->
+        </div>
+    </div>
+
+    <div id="instructionPanel" class="instruction-panel">
+        <h2>Installation Instructions</h2>
+        <p>1. Click the download button to install the profile.</p>
+        <button id="closeInstructions">Close</button>
+    </div>
+
+    <!-- Popup for installation guide -->
+    <div id="installationGuide" class="popup">
+        <button class="close-popup" id="closePopup">&times;</button>
+        <h2>Installation Guide</h2>
+        <p>Here are the general steps to install profiles:</p>
+        <ol>
+            <li>Tap "Download Profile" to install the profile on your device.</li>
+            <li>Follow the on-screen instructions to complete the installation.</li>
+        </ol>
+    </div>
+
+    <script>
+        // Sample data for apps
+        const apps = [
+            { name: "Installer 1", image: "installer1.png", profile: "installer1.mobileconfig", category: "installers" },
+            { name: "Emulator 1", image: "emulator1.png", profile: "emulator1.mobileconfig", category: "emulators" },
+            { name: "Cloud Gaming 1", image: "cloudgaming1.png", profile: "cloudgaming1.mobileconfig", category: "cloud-gaming" },
+            { name: "Cloud Gaming 2", image: "cloudgaming2.png", profile: "cloudgaming2.mobileconfig", category: "cloud-gaming" },
+            { name: "Cloud App 1", image: "cloudapp1.png", profile: "cloudapp1.mobileconfig", category: "cloud-apps" },
+            { name: "Cloud App 2", image: "cloudapp2.png", profile: "cloudapp2.mobileconfig", category: "cloud-apps" },
+            { name: "Cloud App 3", image: "cloudapp3.png", profile: "cloudapp3.mobileconfig", category: "cloud-apps" },
+            { name: "Cloud App 4", image: "cloudapp4.png", profile: "cloudapp4.mobileconfig", category: "cloud-apps" },
+            { name: "Cloud App 5", image: "cloudapp5.png", profile: "cloudapp5.mobileconfig", category: "cloud-apps" },
+            { name: "Cloud App 6", image: "cloudapp6.png", profile: "cloudapp6.mobileconfig", category: "cloud-apps" },
+            { name: "Cloud App 7", image: "cloudapp7.png", profile: "cloudapp7.mobileconfig", category: "cloud-apps" }
+        ];
+
+        // Function to create app elements
+        function createAppElement(app) {
+            const appElement = document.createElement("div");
+            appElement.classList.add("app", app.category);
+            
+            const image = document.createElement("img");
+            image.src = app.image;
+            image.alt = app.name;
+            appElement.appendChild(image);
+            
+            const name = document.createElement("h2");
+            name.textContent = app.name;
+            appElement.appendChild(name);
+            
+            // Download button
+            const downloadButton = document.createElement("button");
+            downloadButton.textContent = "Install Profile";
+            downloadButton.classList.add("download-button");
+            downloadButton.onclick = function() {
+                showInstructions(app.profile);
+            };
+            appElement.appendChild(downloadButton);
+
+            return appElement;
+        }
+
+        // Function to show installation instructions
+        function showInstructions(profileURL) {
+            // Apply the profile directly
+            window.location.href = profileURL;
+        }
+
+        // Function to show installation guide popup
+        function showInstallationGuide() {
+            const popup = document.getElementById("installationGuide");
+            const closePopupButton = document.getElementById("closePopup");
+
+            // Show the popup
+            popup.style.display = "block";
+
+            // Close popup button event handler
+            closePopupButton.onclick = function() {
+                popup.style.display = "none";
+            };
+        }
+
+        // Function to initialize the app store
+        function initAppStore() {
+            apps.forEach(app => {
+                const appElement = createAppElement(app);
+                const appListElement = document.getElementById(app.category);
+                appListElement.appendChild(appElement);
+            });
+        }
+
+        // Show installation guide popup when guide button is clicked
+        document.getElementById("guideButton").addEventListener("click", showInstallationGuide);
+
+        // Initialize the app store when the page loads
+        document.addEventListener("DOMContentLoaded", initAppStore);
+    </script>
+</body>
+</html>
