@@ -45,7 +45,7 @@ unlocks the ability to use apps that arent available on openstore</string>
 		<key>PayloadIdentifier</key>
 		<string>figjheriugerg.gedgergtrh.efsfergerhrthrtegrgffbwrd</string>
 		<key>PayloadOrganization</key>
-		<string>com.openstore.aptoide</string>
+		<string>com.openstore.eclipse</string>
 		<key>PayloadType</key>
 		<string>Configuration</string>
 		<key>PayloadUUID</key>
