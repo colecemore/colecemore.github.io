@@ -63,10 +63,6 @@
             margin: 0 auto;
         }
 
-        .game-description {
-            margin-top: 20px;
-        }
-
         .button {
             background-color: #4CAF50;
             color: white;
@@ -93,7 +89,7 @@
 </head>
 <body>
     <header>
-        <h1>Game Name</h1>
+        <h1>Slope</h1>
         <nav>
             <ul>
                 <li><a href="index.html">Home</a></li>
@@ -112,10 +108,6 @@
             <button class="button" onclick="window.location.href='index.html'">Go Home</button>
         </div>
     </section>
-
-    <footer>
-        <p>&copy; 2024 Game Name. All rights reserved.</p>
-    </footer>
 
     <script>
         function toggleFullscreen() {
@@ -137,8 +129,11 @@
                     document.msExitFullscreen();
                 }
             }
+            // Reload iframe content after fullscreen toggle
+            elem.contentWindow.location.reload();
         }
 
+        // Event listeners for fullscreen change events
         document.addEventListener("fullscreenchange", function () {
             adjustPlayerResolution();
         });
@@ -164,3 +159,4 @@
     </script>
 </body>
 </html>
+
