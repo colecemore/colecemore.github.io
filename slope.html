@@ -37,61 +37,19 @@
             text-decoration: none;
         }
 
-        section {
-            padding: 20px;
-            position: relative;
-        }
-
-        footer {
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            padding: 10px;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-        }
-
         .game-container {
+            max-width: 1280px; /* Set maximum width */
+            margin: 0 auto;
             text-align: center;
-            position: relative;
-            width: 100%;
-            display: none; /* Hide the game initially */
-        }
-
-        .game-container.active {
-            display: block; /* Show the game when active */
         }
 
         .game-container iframe {
-            display: block;
-            margin: 0 auto;
-        }
-
-        .button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
+            width: 100%;
+            height: 720px; /* Set the height for widescreen aspect ratio */
             border: none;
-            cursor: pointer;
-            border-radius: 5px;
-            margin-top: 10px;
         }
 
         .fullscreen-button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-            margin-top: 10px;
-            position: absolute;
-            top: 0;
-            right: 0;
-        }
-
-        .start-game-button {
             background-color: #4CAF50;
             color: white;
             padding: 10px 20px;
@@ -112,27 +70,13 @@
         </nav>
     </header>
 
-    <section>
-        <div class="buttons">
-            <button class="start-game-button" onclick="startGame()">Start Game</button>
-        </div>
-
-        <div class="game-container" id="gameContainer">
-            <!-- Replace "game_url_here" with the actual URL of your game -->
-            <iframe id="gameFrame" src="https://images-opensocial.googleusercontent.com/gadgets/ifr?url=https://cdn.jsdelivr.net/gh/sk1bx/WebStarterkit@27197d685502953065e3a3259b6e34f5acb94e65/src/sp1.5.xml&container=ig" width="100%" height="100%" frameborder="0"></iframe>
-            <button class="fullscreen-button" onclick="toggleFullscreen()">Fullscreen</button>
-        </div>
-    </section>
+    <div class="game-container" id="gameContainer">
+        <iframe id="gameFrame" src="https://images-opensocial.googleusercontent.com/gadgets/ifr?url=https://cdn.jsdelivr.net/gh/sk1bx/WebStarterkit@27197d685502953065e3a3259b6e34f5acb94e65/src/sp1.5.xml&container=ig"
+            frameborder="0"></iframe>
+        <button class="fullscreen-button" onclick="toggleFullscreen()">Fullscreen</button>
+    </div>
 
     <script>
-        function startGame() {
-            var gameContainer = document.getElementById("gameContainer");
-            gameContainer.classList.add("active"); // Show the game container
-            var startGameButton = document.querySelector(".start-game-button");
-            startGameButton.style.display = "none"; // Hide the start game button
-            toggleFullscreen(); // Enable fullscreen mode automatically
-        }
-
         function toggleFullscreen() {
             var elem = document.getElementById("gameFrame");
             if (!document.fullscreenElement) {
@@ -151,32 +95,6 @@
                 } else if (document.msExitFullscreen) { /* IE11 */
                     document.msExitFullscreen();
                 }
-            }
-            // Reload iframe content after fullscreen toggle
-            elem.contentWindow.location.reload();
-        }
-
-        // Event listeners for fullscreen change events
-        document.addEventListener("fullscreenchange", function () {
-            adjustPlayerResolution();
-        });
-
-        document.addEventListener("webkitfullscreenchange", function () {
-            adjustPlayerResolution();
-        });
-
-        document.addEventListener("mozfullscreenchange", function () {
-            adjustPlayerResolution();
-        });
-
-        function adjustPlayerResolution() {
-            var elem = document.getElementById("gameFrame");
-            if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
-                elem.width = window.screen.width;
-                elem.height = window.screen.height;
-            } else {
-                elem.width = "100%";
-                elem.height = "100%";
             }
         }
     </script>
