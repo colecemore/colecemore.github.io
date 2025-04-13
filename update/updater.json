@@ -1,6 +1,6 @@
 {
-  "currentversion": "1.0",
-  "build": "2025120",
-  "url": "https://www.icloud.com/shortcuts/2fc061d6602c443cb2f89562598bdddb",
-  "changelog": "Initial release"
+  "currentversion": "1.1",
+  "build": "2025412",
+  "url": "https://www.icloud.com/shortcuts/e7e4de0d661d43dfacc3e9045741cd3b",
+  "changelog": "discord support, ota updates, and users now exist in store!"
 }
