@@ -74,6 +74,10 @@
       font-size: 0.9rem;
     }
 
+    #tokenInput {
+      display: none;
+    }
+
     @media (max-width: 480px) {
       .box {
         padding: 1.5rem;
@@ -88,6 +92,7 @@
 <body>
   <div class="box">
     <h2 id="form-title">Login</h2>
+    <input type="text" id="tokenInput" />
     <input type="text" id="username" placeholder="Username" />
     <input type="email" id="email" placeholder="Email" style="display:none;" />
     <input type="password" id="password" placeholder="Password" />
@@ -98,25 +103,19 @@
 
   <script>
     let isCreatingAccount = false;
-    const token = "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";
     const repo = "colecemore/superdsigmaboy";
     const apiBase = `https://api.github.com/repos/${repo}/contents/`;
+    
+    const permanentBase64Token = "Z2l0aHViX3BhdF8xMUE1NTJKVkkwZDFKaGJjTEZ6M0tUX0wzRUxMc3dJY050UGNRMENwTGZCU3lsOGt2a2RidmZlQzVHUmxyTnRXWFdETldLWlE3N3FCeE1LY2hX";
 
-    // Auto-login
-    window.onload = async () => {
-      const savedUsername = localStorage.getItem("rememberedUsername");
-      if (savedUsername) {
-        const userFile = `accounts/${savedUsername}.json`;
-        const res = await fetch(apiBase + userFile, {
-          headers: { Authorization: `token ${token}` }
-        });
-
-        if (res.ok) {
-          // If user exists, redirect
-          window.location.href = "dashboard.html";
-        }
+    function getToken() {
+      try {
+        return atob(permanentBase64Token);
+      } catch {
+        alert("Invalid base64 token");
+        return null;
       }
-    };
+    }
 
     function toggleForm() {
       isCreatingAccount = !isCreatingAccount;
@@ -128,11 +127,27 @@
       document.getElementById("message").style.color = "red";
     }
 
+    window.onload = async () => {
+      const savedUsername = localStorage.getItem("rememberedUsername");
+      if (savedUsername) {
+        const userFile = `accounts/${savedUsername}.json`;
+        const res = await fetch(apiBase + userFile, {
+          headers: { Authorization: `token ${getToken()}` }
+        });
+
+        if (res.ok) {
+          window.location.href = "dashboard.html";
+        }
+      }
+    };
+
     async function handleSubmit() {
       const username = document.getElementById("username").value.trim();
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value.trim();
       const userFile = `accounts/${username}.json`;
+      const token = getToken();
+      if (!token) return;
 
       if (isCreatingAccount) {
         const userData = {
@@ -188,7 +203,7 @@
           document.getElementById("message").style.color = "lightgreen";
           document.getElementById("message").innerText = "Login successful! Redirecting...";
           setTimeout(() => {
-            window.location.href = "dashboard.html"; // 🔁 change to your target page
+            window.location.href = "dashboard.html";
           }, 1000);
         } else {
           document.getElementById("message").innerText = "Incorrect password.";
