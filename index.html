@@ -3,213 +3,170 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Create Account / Sign In</title>
+  <title>Login</title>
   <style>
     body {
-      margin: 0;
-      font-family: Arial, sans-serif;
       background-color: #121212;
-      color: #ffffff;
+      color: white;
+      font-family: Arial, sans-serif;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      height: 100vh;
-      padding: 1rem;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
     }
-
-    .box {
-      background-color: #1e1e1e;
-      padding: 2rem;
-      border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.6);
+    form {
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
       width: 100%;
       max-width: 400px;
-    }
-
-    h2 {
-      text-align: center;
-      margin-bottom: 1rem;
-      color: #fff;
-    }
-
-    input {
-      width: 100%;
-      padding: 0.75rem;
-      margin-top: 0.75rem;
-      border: 1px solid #444;
-      background-color: #2c2c2c;
-      color: #fff;
-      border-radius: 6px;
-      font-size: 1rem;
-    }
-
-    button {
-      width: 100%;
-      padding: 0.75rem;
-      margin-top: 1.5rem;
-      background-color: #7e57c2;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: background 0.3s ease;
-    }
-
-    button:hover {
-      background-color: #9575cd;
-    }
-
-    .toggle {
-      margin-top: 1rem;
-      color: #90caf9;
-      text-align: center;
-      cursor: pointer;
-      font-size: 0.95rem;
-    }
-
-    #message {
-      margin-top: 1rem;
-      text-align: center;
-      font-size: 0.9rem;
-    }
-
-    #tokenInput {
       display: none;
     }
-
-    @media (max-width: 480px) {
-      .box {
-        padding: 1.5rem;
-      }
-
-      input, button {
-        font-size: 1rem;
-      }
+    form.active {
+      display: block;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: none;
+      font-size: 16px;
+    }
+    input {
+      background: #2a2a2a;
+      color: white;
+    }
+    button {
+      background-color: #4e4ef0;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #6b6bfa;
+    }
+    .toggle-link {
+      color: #4e4ef0;
+      margin-top: 15px;
+      cursor: pointer;
+      text-align: center;
     }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h2 id="form-title">Login</h2>
-    <input type="text" id="tokenInput" />
-    <input type="text" id="username" placeholder="Username" />
-    <input type="email" id="email" placeholder="Email" style="display:none;" />
-    <input type="password" id="password" placeholder="Password" />
-    <button onclick="handleSubmit()">Sign In</button>
-    <p id="message" style="color:red;"></p>
-    <div class="toggle" onclick="toggleForm()">Don't have an account? Create one</div>
-  </div>
 
-  <script>
-    let isCreatingAccount = false;
-    const repo = "colecemore/superdsigmaboy";
-    const apiBase = `https://api.github.com/repos/${repo}/contents/`;
-    
-    const permanentBase64Token = "Z2l0aHViX3BhdF8xMUE1NTJKVkkwZDFKaGJjTEZ6M0tUX0wzRUxMc3dJY050UGNRMENwTGZCU3lsOGt2a2RidmZlQzVHUmxyTnRXWFdETldLWlE3N3FCeE1LY2hX";
+<h2 id="formTitle">Sign In</h2>
 
-    function getToken() {
-      try {
-        return atob(permanentBase64Token);
-      } catch {
-        alert("Invalid base64 token");
-        return null;
-      }
-    }
+<form id="loginForm" class="active">
+  <input type="text" id="username" placeholder="Username" required />
+  <input type="password" id="password" placeholder="Password" required />
+  <button type="submit">Login</button>
+</form>
 
-    function toggleForm() {
-      isCreatingAccount = !isCreatingAccount;
-      document.getElementById("form-title").innerText = isCreatingAccount ? "Create Account" : "Login";
-      document.querySelector("button").innerText = isCreatingAccount ? "Create Account" : "Sign In";
-      document.querySelector(".toggle").innerText = isCreatingAccount ? "Already have an account? Sign in" : "Don't have an account? Create one";
-      document.getElementById("email").style.display = isCreatingAccount ? "block" : "none";
-      document.getElementById("message").innerText = "";
-      document.getElementById("message").style.color = "red";
-    }
+<form id="createForm">
+  <input type="text" id="newUsername" placeholder="New Username" required />
+  <input type="email" id="email" placeholder="Email" required />
+  <input type="password" id="newPassword" placeholder="New Password" required />
+  <button type="submit">Create Account</button>
+</form>
 
-    window.onload = async () => {
-      const savedUsername = localStorage.getItem("rememberedUsername");
-      if (savedUsername) {
-        const userFile = `accounts/${savedUsername}.json`;
-        const res = await fetch(apiBase + userFile, {
-          headers: { Authorization: `token ${getToken()}` }
-        });
+<div class="toggle-link" id="toggleLink">Don't have an account? Create one</div>
 
-        if (res.ok) {
-          window.location.href = "dashboard.html";
-        }
-      }
-    };
+<script>
+  let githubToken = '';
 
-    async function handleSubmit() {
-      const username = document.getElementById("username").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
-      const userFile = `accounts/${username}.json`;
-      const token = getToken();
-      if (!token) return;
+  // Fetch token from Pastebin
+  fetch('https://pastebin.com/raw/fmFJgUXV')
+    .then(res => res.text())
+    .then(token => {
+      githubToken = token.trim();
+      localStorage.setItem("githubToken", githubToken);
+    })
+    .catch(err => {
+      alert("Error loading GitHub token");
+      console.error(err);
+    });
 
-      if (isCreatingAccount) {
-        const userData = {
-          username,
-          email,
-          password
-        };
+  const repo = 'colecemore/superdsigmaboy';
+  const branch = 'main';
 
-        const check = await fetch(apiBase + userFile, {
-          headers: { Authorization: `token ${token}` }
-        });
+  function toBase64(str) {
+    return btoa(unescape(encodeURIComponent(str)));
+  }
 
-        if (check.status === 200) {
-          document.getElementById("message").innerText = "Username already exists.";
-          return;
-        }
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
 
-        const res = await fetch(apiBase + userFile, {
-          method: "PUT",
-          headers: {
-            Authorization: `token ${token}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            message: `Create account for ${username}`,
-            content: btoa(JSON.stringify(userData, null, 2))
-          })
-        });
-
-        if (res.ok) {
-          document.getElementById("message").style.color = "lightgreen";
-          document.getElementById("message").innerText = "Account created!";
-          toggleForm();
-        } else {
-          document.getElementById("message").innerText = "Failed to create account.";
-        }
-
+    const res = await fetch(`https://api.github.com/repos/${repo}/contents/accounts/${username}.json`);
+    if (res.ok) {
+      const data = await res.json();
+      const content = JSON.parse(atob(data.content));
+      if (content.password === password) {
+        localStorage.setItem("user", username);
+        window.location.href = "main.html";
       } else {
-        const res = await fetch(apiBase + userFile, {
-          headers: { Authorization: `token ${token}` }
-        });
-
-        if (!res.ok) {
-          document.getElementById("message").innerText = "User not found.";
-          return;
-        }
-
-        const data = await res.json();
-        const content = JSON.parse(atob(data.content));
-
-        if (content.password === password) {
-          localStorage.setItem("rememberedUsername", username);
-          document.getElementById("message").style.color = "lightgreen";
-          document.getElementById("message").innerText = "Login successful! Redirecting...";
-          setTimeout(() => {
-            window.location.href = "dashboard.html";
-          }, 1000);
-        } else {
-          document.getElementById("message").innerText = "Incorrect password.";
-        }
+        alert("Incorrect password");
       }
+    } else {
+      alert("User not found");
     }
-  </script>
+  });
+
+  document.getElementById('createForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('newUsername').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('newPassword').value;
+
+    const filePath = `accounts/${username}.json`;
+    const fileContent = {
+      username,
+      email,
+      password
+    };
+    const encodedContent = toBase64(JSON.stringify(fileContent));
+
+    const res = await fetch(`https://api.github.com/repos/${repo}/contents/${filePath}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `token ${githubToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        message: `Create account for ${username}`,
+        content: encodedContent,
+        branch
+      })
+    });
+
+    if (res.ok) {
+      alert("Account created!");
+    } else {
+      alert("Failed to create account");
+      console.error(await res.json());
+    }
+  });
+
+  // Toggle between login and create forms
+  const loginForm = document.getElementById('loginForm');
+  const createForm = document.getElementById('createForm');
+  const toggleLink = document.getElementById('toggleLink');
+  const formTitle = document.getElementById('formTitle');
+
+  toggleLink.addEventListener('click', () => {
+    const isLogin = loginForm.classList.contains('active');
+    loginForm.classList.toggle('active', !isLogin);
+    createForm.classList.toggle('active', isLogin);
+    formTitle.textContent = isLogin ? 'Create Account' : 'Sign In';
+    toggleLink.textContent = isLogin ? 'Already have an account? Sign in' : "Don't have an account? Create one";
+  });
+</script>
+
 </body>
 </html>
