@@ -3,62 +3,198 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Welcome to Dra1n!</title>
+  <title>Create Account / Sign In</title>
   <style>
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #000;
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
-      text-align: center;
-    }
-
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 0.5rem;
+      font-family: Arial, sans-serif;
+      background-color: #121212;
       color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      padding: 1rem;
     }
 
-    p {
-      font-size: 1.2rem;
-      margin-bottom: 2rem;
-      max-width: 600px;
-      color: #ccc;
-    }
-
-    .btn {
-      display: inline-block;
-      background-color: #2c2c2e;
-      color: #fff;
-      padding: 1rem 2rem;
+    .box {
+      background-color: #1e1e1e;
+      padding: 2rem;
       border-radius: 12px;
-      text-decoration: none;
-      font-size: 1rem;
-      margin: 0.5rem;
-      transition: background-color 0.2s;
+      box-shadow: 0 0 20px rgba(0,0,0,0.6);
+      width: 100%;
+      max-width: 400px;
     }
 
-    .btn:hover {
-      background-color: #3a3a3c;
+    h2 {
+      text-align: center;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
+
+    input {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 0.75rem;
+      border: 1px solid #444;
+      background-color: #2c2c2c;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      margin-top: 1.5rem;
+      background-color: #7e57c2;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #9575cd;
+    }
+
+    .toggle {
+      margin-top: 1rem;
+      color: #90caf9;
+      text-align: center;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+
+    #message {
+      margin-top: 1rem;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 480px) {
+      .box {
+        padding: 1.5rem;
+      }
+
+      input, button {
+        font-size: 1rem;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="box">
+    <h2 id="form-title">Login</h2>
+    <input type="text" id="username" placeholder="Username" />
+    <input type="email" id="email" placeholder="Email" style="display:none;" />
+    <input type="password" id="password" placeholder="Password" />
+    <button onclick="handleSubmit()">Sign In</button>
+    <p id="message" style="color:red;"></p>
+    <div class="toggle" onclick="toggleForm()">Don't have an account? Create one</div>
+  </div>
 
-  <h1>Dra1n</h1>
-  <p>
+  <script>
+    let isCreatingAccount = false;
+    const token = "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";
+    const repo = "colecemore/superdsigmaboy";
+    const apiBase = `https://api.github.com/repos/${repo}/contents/`;
 
-Shortcut marketplace that you can upload and download from, and website builders and such coming next release!
-</p>
+    // Auto-login
+    window.onload = async () => {
+      const savedUsername = localStorage.getItem("rememberedUsername");
+      if (savedUsername) {
+        const userFile = `accounts/${savedUsername}.json`;
+        const res = await fetch(apiBase + userFile, {
+          headers: { Authorization: `token ${token}` }
+        });
 
-  <!-- Replace the href with your actual iCloud shortcut link -->
-  <a href="https://routinehub.co/shortcut/22063/" class="btn">Download v1.1</a>
-  <a href="https://docs.google.com/forms/d/1BKdrwwYwhVeW3TF5TlUuP8G0l6_dbN-CANi7DvSnRi4/edit" class="btn">Create Account</a>
-  <a href="https://discord.gg/5nY79V8Um4" class="btn">Join the discord</a>
+        if (res.ok) {
+          // If user exists, redirect
+          window.location.href = "dashboard.html";
+        }
+      }
+    };
 
+    function toggleForm() {
+      isCreatingAccount = !isCreatingAccount;
+      document.getElementById("form-title").innerText = isCreatingAccount ? "Create Account" : "Login";
+      document.querySelector("button").innerText = isCreatingAccount ? "Create Account" : "Sign In";
+      document.querySelector(".toggle").innerText = isCreatingAccount ? "Already have an account? Sign in" : "Don't have an account? Create one";
+      document.getElementById("email").style.display = isCreatingAccount ? "block" : "none";
+      document.getElementById("message").innerText = "";
+      document.getElementById("message").style.color = "red";
+    }
+
+    async function handleSubmit() {
+      const username = document.getElementById("username").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const userFile = `accounts/${username}.json`;
+
+      if (isCreatingAccount) {
+        const userData = {
+          username,
+          email,
+          password
+        };
+
+        const check = await fetch(apiBase + userFile, {
+          headers: { Authorization: `token ${token}` }
+        });
+
+        if (check.status === 200) {
+          document.getElementById("message").innerText = "Username already exists.";
+          return;
+        }
+
+        const res = await fetch(apiBase + userFile, {
+          method: "PUT",
+          headers: {
+            Authorization: `token ${token}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            message: `Create account for ${username}`,
+            content: btoa(JSON.stringify(userData, null, 2))
+          })
+        });
+
+        if (res.ok) {
+          document.getElementById("message").style.color = "lightgreen";
+          document.getElementById("message").innerText = "Account created!";
+          toggleForm();
+        } else {
+          document.getElementById("message").innerText = "Failed to create account.";
+        }
+
+      } else {
+        const res = await fetch(apiBase + userFile, {
+          headers: { Authorization: `token ${token}` }
+        });
+
+        if (!res.ok) {
+          document.getElementById("message").innerText = "User not found.";
+          return;
+        }
+
+        const data = await res.json();
+        const content = JSON.parse(atob(data.content));
+
+        if (content.password === password) {
+          localStorage.setItem("rememberedUsername", username);
+          document.getElementById("message").style.color = "lightgreen";
+          document.getElementById("message").innerText = "Login successful! Redirecting...";
+          setTimeout(() => {
+            window.location.href = "dashboard.html"; // 🔁 change to your target page
+          }, 1000);
+        } else {
+          document.getElementById("message").innerText = "Incorrect password.";
+        }
+      }
+    }
+  </script>
 </body>
 </html>
