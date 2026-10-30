@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Monopoly (browser only)</title>
+<style>
+:root{--ink:#10243a;--paper:#e3efe6;--line:#2c4a3d;--gold:#f0b429}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:#f3f6f4;font:15px/1.4 "Trebuchet MS",system-ui,sans-serif}
+input,button{font:inherit;padding:10px 12px;border-radius:6px;border:0}
+input{width:100%;margin:6px 0;background:#1b3552;color:#fff}
+button{background:var(--gold);color:#201600;font-weight:700;cursor:pointer}
+button:disabled{opacity:.4;cursor:default}button.alt{background:#2b4a6b;color:#fff}button.sm{padding:3px 8px;font-size:12px}
+button:focus-visible,input:focus-visible{outline:3px solid #fff}
+.lobby{max-width:420px;margin:10vh auto;padding:24px}
+h1{font:700 48px/1 Georgia,serif;letter-spacing:-1px;margin:0 0 20px}
+.code{font:700 56px/1 Georgia,serif;letter-spacing:8px;color:var(--gold);margin:8px 0}
+.game{display:flex;gap:16px;padding:12px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+aside{width:280px;display:flex;flex-direction:column;gap:12px}
+.pl{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#1b3552;border-radius:8px;border-left:6px solid}
+.pl.now{outline:2px solid var(--gold)}.pl.out{opacity:.4;text-decoration:line-through}.pl b{margin-left:auto}
+.pp{display:flex;align-items:center;gap:6px;font-size:13px;margin:4px 0}.pp span{width:10px;height:10px;border-radius:2px}.pp em{flex:1;font-style:normal}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#b3261e;padding:10px 16px;border-radius:8px;display:none}
+.game{--b:min(94vh,96vw,780px)}
+.board{position:relative;transform-origin:0 0;transition:transform .7s ease;--c:calc(var(--b)*.14);--s:calc(var(--b)*.08);width:var(--b);height:var(--b);display:grid;grid-template-columns:var(--c) repeat(9,1fr) var(--c);grid-template-rows:var(--c) repeat(9,1fr) var(--c);background:#000;gap:1px;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
+.sq{background:#cde6d0;color:#000;position:relative;overflow:hidden}
+.in{position:absolute;display:flex;flex-direction:column;align-items:center;text-align:center;font-size:calc(var(--b)*.0098);font-weight:700;line-height:1.05}
+.k-b .in,.k-c .in,.k-t .in{inset:0}.k-t .in{transform:rotate(180deg)}
+.k-l .in,.k-r .in{width:var(--s);height:var(--c);left:calc(50% - var(--s)/2);top:calc(50% - var(--c)/2)}
+.k-l .in{transform:rotate(90deg)}.k-r .in{transform:rotate(-90deg)}
+.bar{width:100%;height:22%;border-bottom:1px solid #000;flex:none}
+.nm{flex:1;display:flex;align-items:center;justify-content:center;padding:0 2px;text-transform:uppercase}
+.ic{font-size:2.3em;line-height:1;flex:none;margin-bottom:2px}.pr{flex:none;padding-bottom:3px;font-weight:600}
+.cn{justify-content:center;gap:2px}.cn b{font:900 2.6em/1 "Arial Black",Impact,sans-serif;text-transform:uppercase}.cn small{font-size:.8em}
+.go{color:#e30613}.sq.m .in{opacity:.4}.own{position:absolute;left:0;right:0;bottom:0;height:5px}
+.tk{position:absolute;inset:0;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px;pointer-events:none;padding:8%}
+.k-c .tk{align-items:flex-end;padding-bottom:5%}.tk i{width:calc(var(--b)*.027);height:calc(var(--b)*.027);border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #000,0 2px 3px #0008}
+.mid{grid-area:2/2/11/11;background:#cde6d0;position:relative;overflow:hidden;color:#111}
+.ban{position:absolute;left:50%;top:33%;width:100%;transform:translate(-50%,-50%) rotate(-30deg);background:#e30613;color:#fff;border:3px solid #000;text-align:center;padding:.05em 0;font:900 calc(var(--b)*.062)/1.1 "Arial Black",Impact,sans-serif;letter-spacing:.03em}
+.deck{position:absolute;width:27%;height:15%;border:2px solid #000;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;font:900 calc(var(--b)*.017) "Arial Black",Arial,sans-serif;text-align:center;transform:rotate(45deg)}
+.deck b{font-size:2.6em;line-height:1}.ch{background:#f58220;right:3%;top:37%;width:25%;height:14%}.cc{background:#4aa7dd;left:4%;top:6%;width:25%;height:14%}
+.ctl{position:absolute;left:4%;right:4%;top:60%;bottom:3%;background:#fff;border:2px solid #000;border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;overflow:hidden}
+.top{display:flex;align-items:center;justify-content:space-between}.hd{font:700 20px Georgia,serif}.dice{font-size:38px;line-height:1;color:#111}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.stage{width:var(--b);height:var(--b);overflow:hidden;position:relative;background:#000;outline:3px solid #000;flex:none}
+.tl{position:absolute;inset:0;pointer-events:none;z-index:3}
+.tok{position:absolute;width:calc(var(--b)*.032);height:calc(var(--b)*.032);margin:calc(var(--b)*-.016) 0 0 calc(var(--b)*-.016);border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #000,0 3px 5px #0009;transition:left .17s linear,top .17s linear;display:flex;align-items:center;justify-content:center;font:700 calc(var(--b)*.014) Arial;color:#fff;text-shadow:0 1px 2px #000}
+.tok.now{animation:pulse 1s infinite}@keyframes pulse{50%{box-shadow:0 0 0 6px #ffd54a,0 3px 5px #0009}}
+.hud{position:absolute;left:3%;right:3%;bottom:2%;z-index:6;background:#fffffff2;color:#111;border:2px solid #000;border-radius:8px;padding:6px 10px;display:flex;flex-direction:column;gap:6px}
+.hud .hd{font:700 17px Georgia,serif}.hud .dice{display:flex}
+.die{width:38px;height:38px;background:#fff;border:2px solid #111;border-radius:7px;display:inline-grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:4px;margin-left:6px;box-shadow:0 2px 0 #0003}
+.die i{border-radius:50%;margin:1px}.die i.on{background:#111}
+.roll .die{animation:shake .16s infinite alternate}@keyframes shake{from{transform:rotate(-14deg) translateY(-4px)}to{transform:rotate(14deg) translateY(2px)}}
+aside{width:300px}aside .log{max-height:190px;overflow:auto;background:#1b3552;border-radius:8px;padding:8px;color:#dfe9f2}aside .log div{border-color:#ffffff18}
+.pl.foc{outline:2px dashed #fff}.hint{font-size:13px;color:#ffd54a;margin:4px 0}.tr{background:#2b4a6b;border-radius:8px;padding:8px 10px;font-size:13px;display:flex;flex-direction:column;gap:6px}
+select{background:#1b3552;color:#fff;border:0;border-radius:6px;padding:6px;font:inherit}.set{display:flex;flex-direction:column;gap:8px;margin:8px 0 14px}.set label{display:flex;justify-content:space-between;align-items:center}
+.ck input{width:auto;margin:0 6px 0 0}.ck{justify-content:flex-start!important}h3{margin:14px 0 6px}
+.modal{display:none;position:fixed;inset:0;background:#000a;align-items:center;justify-content:center;z-index:50}
+.mbox{background:#fff;color:#111;border-radius:10px;padding:18px;min-width:340px;max-width:92vw;max-height:88vh;overflow:auto}
+.mbox select{background:#eee;color:#111}.cols{display:flex;gap:24px;margin:12px 0}.cols label{display:block;font-size:13px;margin:3px 0}
+.mbox input[type=number]{width:90px;background:#eee;color:#111;padding:4px;margin:0}.mbox input[type=checkbox]{width:auto;margin:0 4px 0 0}
+.popup{position:absolute;left:50%;top:5%;z-index:8;width:min(250px,60%);background:#fff;color:#111;border:3px solid #000;border-radius:6px;text-align:center;box-shadow:0 12px 30px #000b;cursor:pointer;animation:pop .4s ease-out both;transform:translateX(-50%)}
+@keyframes pop{from{transform:translateX(-50%) rotateY(90deg) scale(.6);opacity:0}to{transform:translateX(-50%) rotateY(0) scale(1);opacity:1}}
+.popup .cap{font-size:12px;padding:5px;background:#eee;border-bottom:1px solid #000}.dh,.cd{padding:8px 6px;display:flex;flex-direction:column;border-bottom:3px solid #000}
+.dh b{font:900 17px/1.1 "Helvetica Neue",Arial,sans-serif;letter-spacing:.5px}.dh small,.cd small{font-size:10px;letter-spacing:2px}
+.cd{padding:10px}.cd small{font-weight:700}.cd .big{font:900 44px/1 Georgia,serif;color:#fff}.popup .db{padding:8px 10px;font-size:13px;line-height:1.5}.popup .db div{display:flex;justify-content:space-between}
+.popup .cd+.db div{display:block}.popup .ow{padding:6px;font-size:12px;border-top:1px solid #0003;background:#f4f4f4}
+.feed{position:absolute;left:8px;top:8px;width:min(250px,32%);z-index:7;display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.fi{background:#10243af2;color:#fff;border-left:5px solid;border-radius:6px;padding:5px 8px;font-size:12.5px;line-height:1.25;box-shadow:0 3px 8px #0006;animation:fin .3s ease-out,fout .5s 6s forwards}
+@keyframes fin{from{transform:translateX(-30px);opacity:0}}@keyframes fout{to{opacity:0}}
+.bar{display:flex;align-items:center;justify-content:center}.bar i{display:block;border:1px solid #000}.bar i.hs{width:.75em;height:.75em;background:#1fb25a;margin:0 1px}.bar i.ht{width:1.8em;height:.85em;background:#e30613}
+.sq[data-u=deed]{cursor:help}.pp{flex-wrap:wrap}.pp button.sm{padding:2px 7px}
+.hud{pointer-events:none}.hud button{pointer-events:auto}
+.hud.center{top:58%;bottom:auto;left:17%;right:17%;box-shadow:0 6px 18px #0006}
+.tmr{position:relative;height:17px;background:#ddd;border:1px solid #000;border-radius:9px;overflow:hidden;visibility:hidden}
+.tmr i{position:absolute;left:0;top:0;bottom:0;width:0;transition:width .25s linear}.tmr span{position:relative;font:700 11px/15px Arial;padding:0 8px;color:#000}
+html{-webkit-text-size-adjust:100%}button{touch-action:manipulation}
+@supports (height:100dvh){.game{--b:min(94dvh,96vw,780px)}}
+@media (max-width:900px){.game{padding:6px;gap:10px;justify-content:center}aside{width:min(96vw,560px)}}
+@media (max-width:700px){input,select{font-size:16px}button{padding:12px 14px}button.sm{padding:8px 10px;font-size:13px}.hud{padding:5px 8px;gap:4px}.hud .hd{font-size:15px}
+.die{width:30px;height:30px;padding:3px;margin-left:4px}.feed{width:52%}.fi{font-size:11px;padding:4px 6px}.lobby{margin:3vh auto;padding:14px}h1{font-size:38px}.code{font-size:44px}
+.cols{flex-wrap:wrap}.mbox{min-width:0;width:94vw}.popup{width:min(230px,68%)}.pl{padding:6px 8px}.hud .row{gap:6px}}
+@media (max-width:700px){.hud button{padding:8px 11px;font-size:13px}.hud .hd{font-size:14px}.popup{width:min(210px,62%);top:3%}
+.popup .db{font-size:10.5px!important;line-height:1.25!important;padding:5px 8px}.popup .cap{font-size:10px;padding:3px}.dh b{font-size:14px}.dh{padding:5px 4px}.cd{padding:6px}.cd .big{font-size:30px}.popup .ow{font-size:10px;padding:3px}}
+@media (hover:none){.keys{display:none}}
+</style></head><body><div id="app"></div><div id="toast"></div>
+<script>
+(function (g) {
+  const p = (n, c, p, r) => ({ t: 'p', n, c, p, r }), rr = n => ({ t: 'r', n, p: 200 }), uu = n => ({ t: 'u', n, p: 150 }),
+    cc = n => ({ t: 'c', n }), tx = (n, a) => ({ t: 'x', n, a });
+  const B = [{ t: 'go', n: 'GO' }, p('Mediter\u00adranean Ave', '#955436', 60, 2), cc('Community Chest'), p('Baltic Ave', '#955436', 60, 4), tx('Income Tax', 200), rr('Reading Railroad'),
+    p('Oriental Ave', '#aae0fa', 100, 6), cc('Chance'), p('Vermont Ave', '#aae0fa', 100, 6), p('Connecticut Ave', '#aae0fa', 120, 8), { t: 'jail', n: 'Jail' },
+    p('St. Charles Pl', '#d93a96', 140, 10), uu('Electric Co.'), p('States Ave', '#d93a96', 140, 10), p('Virginia Ave', '#d93a96', 160, 12), rr('Pennsyl\u00advania RR'),
+    p('St. James Pl', '#f7941d', 180, 14), cc('Community Chest'), p('Tennessee Ave', '#f7941d', 180, 14), p('New York Ave', '#f7941d', 200, 16), { t: 'free', n: 'Free Parking' },
+    p('Kentucky Ave', '#ed1b24', 220, 18), cc('Chance'), p('Indiana Ave', '#ed1b24', 220, 18), p('Illinois Ave', '#ed1b24', 240, 20), rr('B&O Railroad'),
+    p('Atlantic Ave', '#fef200', 260, 22), p('Ventnor Ave', '#fef200', 260, 22), uu('Water Works'), p('Marvin Gardens', '#fef200', 280, 24), { t: 'gtj', n: 'Go To Jail' },
+    p('Pacific Ave', '#1fb25a', 300, 26), p('N. Carolina Ave', '#1fb25a', 300, 26), cc('Community Chest'), p('Pennsyl\u00advania Ave', '#1fb25a', 320, 28), rr('Short Line'),
+    cc('Chance'), p('Park Place', '#0072bb', 350, 35), tx('Luxury Tax', 100), p('Boardwalk', '#0072bb', 400, 50)];
+  // [text, kind, value]  m=money g=advance-to j=jail b=back 3 f=jail card a=collect from all e=pay each
+  const CARDS = [['Bank error in your favor. Collect $100', 'm', 100], ['Doctor fees. Pay $50', 'm', -50], ['Advance to GO', 'g', 0], ['Go directly to Jail', 'j'],
+    ['Go back 3 spaces', 'b'], ['Advance to Boardwalk', 'g', 39], ['Get Out of Jail Free', 'f'], ["It's your birthday. Collect $20 from every player", 'a', 20],
+    ['Pay each player $25', 'e', 25], ['Advance to Illinois Ave', 'g', 24], ['Speeding fine. Pay $15', 'm', -15], ['Building loan matures. Collect $150', 'm', 150]];
+  const RT = { 1: [2, 10, 30, 90, 160, 250], 3: [4, 20, 60, 180, 320, 450], 6: [6, 30, 90, 270, 400, 550], 8: [6, 30, 90, 270, 400, 550], 9: [8, 40, 100, 300, 450, 600],
+    11: [10, 50, 150, 450, 625, 750], 13: [10, 50, 150, 450, 625, 750], 14: [12, 60, 180, 500, 700, 900], 16: [14, 70, 200, 550, 750, 950], 18: [14, 70, 200, 550, 750, 950], 19: [16, 80, 220, 600, 800, 1000],
+    21: [18, 90, 250, 700, 875, 1050], 23: [18, 90, 250, 700, 875, 1050], 24: [20, 100, 300, 750, 925, 1100], 26: [22, 110, 330, 800, 975, 1150], 27: [22, 110, 330, 800, 975, 1150], 29: [24, 120, 360, 850, 1025, 1200],
+    31: [26, 130, 390, 900, 1100, 1275], 32: [26, 130, 390, 900, 1100, 1275], 34: [28, 150, 450, 1000, 1200, 1400], 37: [35, 175, 500, 1100, 1300, 1500], 39: [50, 200, 600, 1400, 1700, 2000] };
+  B.forEach((s, i) => { if (s.t === 'p') { s.rt = RT[i]; s.h = i < 10 ? 50 : i < 20 ? 100 : i < 30 ? 150 : 200; } });
+  g.B = B; g.CARDS = CARDS;
+})(window);
+
+const COL = ['#e4572e', '#2e86ab', '#f2b134', '#3bb273', '#9b5de5', '#ef476f'];
+const rnd = n => 1 + Math.floor(Math.random() * n), uid = () => Math.random().toString(36).slice(2, 10);
+const grp = i => B[i].c ? B.map((q, j) => j).filter(j => B[j].c === B[i].c) : [i];
+const cur = r => r.players[r.turn], by = (r, id) => r.players.find(p => p.id === id);
+const say = (r, m) => { r.log.push(m); r.logN = (r.logN || 0) + 1; if (r.log.length > 80) r.log.shift(); };
+
+function view(r) {
+  return { code: r.code, host: r.host, players: r.players.map(({ key, ...p }) => p), own: r.own, mort: r.mort, turn: r.turn,
+    phase: r.phase, dice: r.dice, log: r.log, debt: r.debt, winner: r.winner,
+    auc: r.auc, trade: r.trade, hs: r.hs, dl: r.dl ? { t: r.dl.t, s: r.dl.s, id: r.dl.id } : null, ev: r.ev, cardEv: r.cardEv, logN: r.logN || 0, set: r.set, pot: r.pot, rolls: r.rolls || 0 };
+}
+function addPlayer(r, name) {
+  const p = { id: 'p' + r.players.length, key: uid() + uid(), name: String(name || 'Player').slice(0, 16) || 'Player', color: COL[r.players.length],
+    money: 1500, pos: 0, jail: false, jt: 0, jf: 0, out: false, afk: 0 };
+  r.players.push(p); return p;
+}
+function owe(r, p, amt, to) {
+  if (p.money >= amt) { p.money -= amt; if (to) to.money += amt; return true; }
+  r.debt = { id: p.id, amt, to: to ? to.id : null }; r.phase = 'debt';
+  say(r, `${p.name} owes $${amt} — mortgage a property or go bankrupt.`); return false;
+}
+const after = r => { r.phase = (r.dbl && !cur(r).jail) ? 'roll' : 'end'; };
+function startAuction(r, p) {
+  const n = r.players.length, left = [];
+  for (let k = 1; k <= n; k++) { const q = r.players[(r.turn + k) % n]; if (!q.out) left.push(q.id); }
+  r.auc = { i: p.pos, bid: 0, hi: null, left, at: 0 }; r.phase = 'auction'; say(r, `Auction for ${B[p.pos].n}!`);
+}
+function next(r) {
+  r.tn = (r.tn || 0) + 1; do r.turn = (r.turn + 1) % r.players.length; while (cur(r).out); r.dbl = 0; r.phase = 'roll'; }
+function jail(r, p) { p.pos = 10; p.jail = true; p.jt = 0; r.dbl = 0; say(r, `${p.name} goes to jail.`); }
+function moveTo(r, p, i) { if (i < p.pos) { p.money += r.set.salary; say(r, `${p.name} passes GO (+$${r.set.salary}).`); } p.pos = i; }
+
+function card(r, p) {
+  const [t, k, v] = CARDS[rnd(CARDS.length) - 1]; say(r, `Card: ${t}`); r.cardEv = { n: (r.cardEv ? r.cardEv.n : 0) + 1, kind: B[p.pos].n, text: t, who: p.id };
+  if (k === 'm') { v < 0 ? owe(r, p, -v, null) : (p.money += v); }
+  else if (k === 'g') { moveTo(r, p, v); land(r, p); }
+  else if (k === 'j') jail(r, p);
+  else if (k === 'b') { p.pos = (p.pos + 37) % 40; land(r, p); }
+  else if (k === 'f') p.jf++;
+  else if (k === 'a') r.players.forEach(o => { if (o !== p && !o.out) { const a = Math.min(v, o.money); o.money -= a; p.money += a; } });
+  else if (k === 'e') {
+    const n = r.players.filter(o => o !== p && !o.out);
+    if (p.money >= v * n.length) n.forEach(o => { p.money -= v; o.money += v; }); else owe(r, p, v * n.length, null);
+  }
+}
+function land(r, p) {
+  const s = B[p.pos]; say(r, `${p.name} landed on ${s.n}.`);
+  if ('pru'.includes(s.t)) {
+    r.ev = { n: (r.ev ? r.ev.n : 0) + 1, i: p.pos, who: p.id };
+    const o = r.own[p.pos];
+    if (!o) { r.phase = 'buy'; return; }
+    if (o !== p.id && !r.mort[p.pos]) {
+      let rent;
+      if (s.t === 'p') { const n = r.hs[p.pos] || 0; rent = n ? s.rt[n] : s.r * (B.every((q, i) => q.c !== s.c || r.own[i] === o) ? 2 : 1); }
+      else if (s.t === 'r') rent = 25 << (B.filter((q, i) => q.t === 'r' && r.own[i] === o).length - 1);
+      else rent = (r.dice[0] + r.dice[1]) * (B.filter((q, i) => q.t === 'u' && r.own[i] === o).length > 1 ? 10 : 4);
+      const ow = by(r, o); say(r, `${p.name} pays $${rent} rent to ${ow.name}.`); owe(r, p, rent, ow);
+    }
+  } else if (s.t === 'x') { if (owe(r, p, s.a, null) && r.set.jackpot) r.pot += s.a; }
+  else if (s.t === 'gtj') jail(r, p);
+  else if (s.t === 'c') card(r, p);
+  else if (s.t === 'free' && r.set.jackpot && r.pot) { say(r, `${p.name} wins the $${r.pot} Free Parking jackpot!`); p.money += r.pot; r.pot = 0; }
+}
+
+function act(r, p, a) {
+  const ph = r.phase;
+  if (ph === 'lobby') return 'Game has not started';
+  if (ph === 'over') return 'Game is over';
+  switch (a.type) {
+    case 'chat': say(r, `${p.name}: ${String(a.text || '').slice(0, 140)}`); return;
+    case 'mortgage': {
+      const s = B[a.i]; if (!s || r.own[a.i] !== p.id || r.mort[a.i]) return 'Not allowed';
+      if (grp(a.i).some(j => (r.hs[j] || 0) > 0)) return 'Sell the houses in this color group first';
+      r.mort[a.i] = true; p.money += s.p / 2; say(r, `${p.name} mortgaged ${s.n} (+$${s.p / 2}).`); return;
+    }
+    case 'sellHouse': {
+      const s = B[a.i]; if (!s || s.t !== 'p' || r.own[a.i] !== p.id || !(r.hs[a.i] > 0)) return 'No house to sell';
+      if (r.hs[a.i] < Math.max(...grp(a.i).map(j => r.hs[j] || 0))) return 'Sell evenly across the color group';
+      r.hs[a.i]--; p.money += s.h / 2; say(r, `${p.name} sold a ${r.hs[a.i] === 4 ? 'hotel' : 'house'} on ${s.n} (+$${s.h / 2}).`); return;
+    }
+    case 'unmortgage': {
+      const s = B[a.i]; if (!s || r.own[a.i] !== p.id || !r.mort[a.i]) return 'Not allowed';
+      const c = Math.ceil(s.p / 2 * 1.1); if (p.money < c) return 'Not enough cash';
+      p.money -= c; delete r.mort[a.i]; say(r, `${p.name} unmortgaged ${s.n} (-$${c}).`); return;
+    }
+  }
+  if (a.type === 'bid' || a.type === 'fold') {
+    if (ph !== 'auction') return 'No auction running';
+    const u = r.auc; if (u.left[u.at] !== p.id) return 'Not your turn to bid';
+    if (a.type === 'bid') {
+      const amt = Math.floor(+a.amt); if (!(amt > u.bid)) return 'Bid must be higher'; if (amt > p.money) return 'Not enough cash';
+      u.bid = amt; u.hi = p.id; say(r, `${p.name} bids $${amt}.`); u.at = (u.at + 1) % u.left.length;
+    } else { say(r, `${p.name} folds.`); u.left.splice(u.at, 1); if (u.at >= u.left.length) u.at = 0; }
+    if (u.left.length > 1 && u.left[u.at] === u.hi) u.at = (u.at + 1) % u.left.length;
+    if (!u.left.length || (u.left.length === 1 && u.hi === u.left[0])) {
+      const s = B[u.i], w = u.hi && by(r, u.hi);
+      if (w) { w.money -= u.bid; r.own[u.i] = w.id; say(r, `${w.name} wins ${s.n} for $${u.bid}.`); } else say(r, `Nobody bid on ${s.n}.`);
+      r.auc = null; after(r);
+    }
+    return;
+  }
+  if (a.type === 'trade') {
+    if (r.trade) return 'A trade offer is already pending';
+    const to = by(r, a.to); if (!to || to === p || to.out) return 'Pick another player';
+    const cl = x => ({ cash: Math.max(0, Math.floor(+(x && x.cash) || 0)), props: [...new Set(((x && x.props) || []).map(Number))] });
+    const g = cl(a.give), t = cl(a.get);
+    if (!g.cash && !g.props.length && !t.cash && !t.props.length) return 'Empty trade';
+    if (g.cash > p.money || t.cash > to.money) return 'Someone does not have that much cash';
+    if (!g.props.every(i => r.own[i] === p.id) || !t.props.every(i => r.own[i] === to.id)) return 'Invalid properties';
+    if ([...g.props, ...t.props].some(i => grp(i).some(j => (r.hs[j] || 0) > 0))) return 'Sell the houses in those color groups before trading';
+    r.trade = { from: p.id, to: to.id, give: g, get: t }; say(r, `${p.name} offers a trade to ${to.name}.`); return;
+  }
+  if (a.type === 'tAccept' || a.type === 'tDecline') {
+    const t = r.trade; if (!t) return 'No trade pending';
+    if (a.type === 'tDecline') { if (p.id !== t.to && p.id !== t.from) return 'Not your trade'; r.trade = null; say(r, p.id === t.from ? `${p.name} cancels the trade.` : `${p.name} declines the trade.`); return; }
+    if (p.id !== t.to) return 'Not your offer to accept';
+    const f = by(r, t.from);
+    if (f.out || f.money < t.give.cash || p.money < t.get.cash || !t.give.props.every(i => r.own[i] === f.id) || !t.get.props.every(i => r.own[i] === p.id) || [...t.give.props, ...t.get.props].some(i => grp(i).some(j => (r.hs[j] || 0) > 0))) { r.trade = null; return 'Trade no longer valid'; }
+    f.money += t.get.cash - t.give.cash; p.money += t.give.cash - t.get.cash;
+    t.give.props.forEach(i => r.own[i] = p.id); t.get.props.forEach(i => r.own[i] = f.id); r.trade = null; say(r, `${p.name} and ${f.name} complete a trade.`); return;
+  }
+  if (cur(r) !== p) return 'Not your turn';
+  switch (a.type) {
+    case 'roll': {
+      if (ph !== 'roll') return 'Cannot roll now';
+      const x = rnd(6), y = rnd(6), d = x === y; r.dice = [x, y]; r.rolls = (r.rolls || 0) + 1; say(r, `${p.name} rolled ${x} + ${y}.`); r.phase = 'moving';
+      if (p.jail) {
+        if (d) { p.jail = false; r.dbl = 0; say(r, `${p.name} rolled doubles and leaves jail.`); }
+        else if (++p.jt >= 3) { p.jail = false; r.dbl = 0; if (!owe(r, p, 50, null)) return; }
+        else { r.phase = 'end'; return; }
+      } else if (d) { if (++r.dbl === 3) { say(r, 'Three doubles!'); jail(r, p); r.phase = 'end'; return; } }
+      else r.dbl = 0;
+      p.pos += x + y; if (p.pos >= 40) { p.pos -= 40; p.money += r.set.salary; say(r, `${p.name} passes GO (+$${r.set.salary}).`); }
+      land(r, p); if (r.phase === 'moving') after(r); return;
+    }
+    case 'build': {
+      if (ph !== 'roll' && ph !== 'end') return 'Build before rolling or after your move';
+      const s = B[a.i]; if (!s || s.t !== 'p' || r.own[a.i] !== p.id) return 'Not your property';
+      const g = grp(a.i); if (!g.every(j => r.own[j] === p.id)) return 'You need the whole color group';
+      if (g.some(j => r.mort[j])) return 'Unmortgage the whole group first';
+      const n = r.hs[a.i] || 0; if (n >= 5) return 'Already has a hotel';
+      if (n > Math.min(...g.map(j => r.hs[j] || 0))) return 'Build evenly across the color group';
+      if (p.money < s.h) return 'Not enough cash';
+      p.money -= s.h; r.hs[a.i] = n + 1; say(r, `${p.name} built a ${n + 1 === 5 ? 'hotel' : 'house'} on ${s.n} (-$${s.h}).`); return;
+    }
+    case 'buy': {
+      if (ph !== 'buy') return 'Nothing to buy'; const s = B[p.pos];
+      if (p.money < s.p) return 'Not enough cash';
+      p.money -= s.p; r.own[p.pos] = p.id; say(r, `${p.name} bought ${s.n} for $${s.p}.`); after(r); return;
+    }
+    case 'pass': if (ph !== 'buy') return 'Nothing to pass'; if (r.set.auction) startAuction(r, p); else after(r); return;
+    case 'end': if (ph !== 'end') return 'Finish your turn first'; next(r); return;
+    case 'payJail': if (ph !== 'roll' || !p.jail) return 'Not in jail'; if (p.money < 50) return 'Not enough cash';
+      p.money -= 50; p.jail = false; say(r, `${p.name} pays $50 to leave jail.`); return;
+    case 'jailCard': if (ph !== 'roll' || !p.jail || !p.jf) return 'No card to use';
+      p.jf--; p.jail = false; say(r, `${p.name} uses a Get Out of Jail Free card.`); return;
+    case 'payDebt': {
+      const d = r.debt; if (!d) return 'No debt';
+      if (p.money < d.amt) return 'Not enough cash — mortgage something or go bankrupt';
+      p.money -= d.amt; if (d.to) by(r, d.to).money += d.amt; r.debt = null; after(r); return;
+    }
+    case 'bankrupt': {
+      if (!r.debt) return 'You are not in debt'; const to = r.debt.to && by(r, r.debt.to);
+      if (to) to.money += p.money; p.money = 0; p.out = true;
+      for (const i in r.own) if (r.own[i] === p.id) { delete r.hs[i]; if (to) r.own[i] = to.id; else { delete r.own[i]; delete r.mort[i]; } }
+      r.debt = null; r.trade = null; say(r, `${p.name} is bankrupt!`);
+      const alive = r.players.filter(o => !o.out);
+      if (alive.length === 1) { r.winner = alive[0].id; r.phase = 'over'; say(r, `${alive[0].name} wins!`); } else next(r);
+      return;
+    }
+  }
+  return 'Unknown action';
+}
+
+
+
+const $ = s => document.querySelector(s), D = '⚀⚁⚂⚃⚄⚅', ICON = { r: '🚂', u: '💡', c: '❓', x: '💰', gtj: '👮', go: '➡️', jail: '⛓️', free: '🅿️' };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let S = null, R = null, ses = JSON.parse(sessionStorage.getItem('s') || 'null');
+const now = () => S.players[S.turn], who = id => S.players.find(p => p.id === id);
+function toast(m) { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(t.h); t.h = setTimeout(() => t.style.display = 'none', 3500); }
+// ---- transport: the host tab runs the game; other tabs talk to it over BroadcastChannel ----
+const bc = new BroadcastChannel('monopoly-local'), pend = {}, found = {};
+// ---- bots: run on the host tab, one action at a time ----
+const BOTS = ['Ada', 'Turing', 'Grace', 'Linus', 'Hedy', 'Alan'], DEF = { cash: 1500, salary: 200, jackpot: false, auction: true, timer: 30 }, BOT_MS = 1200, BOT_ROLL = 2800;
+let bt = null, botSeen = 0, botMul = +(localStorage.bs || 1);
+function botActor(r) {
+  if (r.phase === 'lobby' || r.phase === 'over') return null;
+  if (r.trade) { const q = by(r, r.trade.to); if (q && q.bot) return q; }
+  const p = r.phase === 'auction' ? by(r, r.auc.left[r.auc.at]) : r.players[r.turn];
+  return p && p.bot && !p.out ? p : null;
+}
+function botTurn() {
+  bt = null; const p = botActor(R); if (!p) return;
+  const go = (type, x) => handle('act', { key: p.key, type, ...x }), ph = R.phase, val = x => x.cash + x.props.reduce((s, i) => s + B[i].p, 0);
+  const mineIdx = () => Object.keys(R.own).map(Number).filter(i => R.own[i] === p.id), hs = i => R.hs[i] || 0;
+  if (R.trade && R.trade.to === p.id) return go(val(R.trade.give) >= val(R.trade.get) * 1.15 ? 'tAccept' : 'tDecline');
+  if (ph === 'auction') { const u = R.auc, v = B[u.i].p, n = u.bid + Math.max(10, Math.round(v / 100) * 10); return n <= Math.min(v, p.money - 50) ? go('bid', { amt: n }) : go('fold'); }
+  if (ph === 'roll') go(p.jail && p.jf ? 'jailCard' : 'roll');
+  else if (ph === 'buy') go(p.money - B[p.pos].p >= 150 ? 'buy' : 'pass');
+  else if (ph === 'end') {
+    const c = mineIdx().find(i => B[i].t === 'p' && grp(i).every(j => R.own[j] === p.id && !R.mort[j]) && hs(i) < 5 && hs(i) <= Math.min(...grp(i).map(hs)) && p.money - B[i].h >= 250);
+    c !== undefined ? go('build', { i: c }) : go('end');
+  } else if (ph === 'debt') {
+    if (p.money >= R.debt.amt) return go('payDebt');
+    const sh = mineIdx().find(i => hs(i) > 0 && hs(i) === Math.max(...grp(i).map(hs)));
+    if (sh !== undefined) return go('sellHouse', { i: sh });
+    const i = mineIdx().find(i => !R.mort[i]); i !== undefined ? go('mortgage', { i }) : go('bankrupt');
+  }
+}
+// ---- turn timer (host tab is the clock) ----
+function timerActor(r) { return r.phase === 'auction' && r.auc ? by(r, r.auc.left[r.auc.at]) : r.players[r.turn]; }
+function stampDl(r) {
+  if (!r.set.timer || r.phase === 'lobby' || r.phase === 'over') { r.dl = null; return; }
+  const a = timerActor(r); if (!a || a.bot || a.out) { r.dl = null; return; }
+  const k = [r.turn, r.phase, r.rolls || 0, r.auc ? r.auc.at + ':' + r.auc.bid + ':' + r.auc.left.length : '', r.debt ? 'd' : ''].join('|');
+  if (!r.dl || r.dl.k !== k) r.dl = { k, t: Date.now() + r.set.timer * 1000 + (r.phase === 'roll' ? 0 : 2500), s: r.set.timer, id: a.id };
+}
+function bust(r, p, to, why) {
+  if (to) to.money += p.money; p.money = 0; p.out = true;
+  for (const i in r.own) if (r.own[i] === p.id) { delete r.hs[i]; if (to) r.own[i] = to.id; else { delete r.own[i]; delete r.mort[i]; } }
+  r.debt = null; r.trade = null; say(r, `${p.name} ${why}.`);
+  const alive = r.players.filter(o => !o.out);
+  if (alive.length === 1) { r.winner = alive[0].id; r.phase = 'over'; say(r, `${alive[0].name} wins!`); } else if (r.players[r.turn] === p) next(r);
+}
+function autoDebt(r, p) {
+  const hs = i => r.hs[i] || 0; let g = 0;
+  while (r.debt && p.money < r.debt.amt && g++ < 80) {
+    const own = Object.keys(r.own).map(Number).filter(i => r.own[i] === p.id);
+    const sh = own.find(i => hs(i) > 0 && hs(i) === Math.max(...grp(i).map(hs))); if (sh !== undefined) { act(r, p, { type: 'sellHouse', i: sh }); continue; }
+    const m = own.find(i => !r.mort[i]); if (m !== undefined) { act(r, p, { type: 'mortgage', i: m }); continue; } break;
+  }
+  if (r.debt && p.money >= r.debt.amt) act(r, p, { type: 'payDebt' });
+  else if (r.debt) bust(r, p, r.debt.to && by(r, r.debt.to), 'could not pay the debt and went bankrupt');
+}
+function onTimeout(r, p) {
+  const ph = r.phase, mine = r.players[r.turn] === p;
+  if (mine && ph !== 'auction' && p.afkTurn !== (r.tn || 0)) { p.afk = (p.afk || 0) + 1; p.afkTurn = r.tn || 0; }
+  say(r, `⏰ ${p.name} ran out of time${mine && ph !== 'auction' ? ` (${p.afk}/6 missed turns)` : ''}.`);
+  if (mine && ph !== 'auction' && p.afk >= 6) return bust(r, p, null, 'was removed for missing 6 turns in a row');
+  if (ph === 'auction') act(r, p, { type: 'fold' });
+  else if (ph === 'buy') act(r, p, { type: 'pass' });
+  else if (ph === 'debt') autoDebt(r, p);
+  else next(r);
+}
+function tick() {
+  if (!R || !R.dl || R.phase === 'lobby' || R.phase === 'over' || Date.now() < R.dl.t) return;
+  const p = timerActor(R); R.dl = null; if (p && !p.bot && !p.out) onTimeout(R, p); push(R);
+}
+setInterval(tick, 500);
+function push(r) {
+  stampDl(r); r.ts = Date.now(); try { localStorage['mono-' + r.code] = JSON.stringify(r); } catch {}
+  const v = view(r); bc.postMessage({ k: 'view', code: r.code, v }); if (ses && ses.code === r.code) { S = v; render(); }
+  clearTimeout(bt); const rolled = (r.rolls || 0) !== botSeen; botSeen = r.rolls || 0;
+  if (R && ses && ses.host && botActor(r)) bt = setTimeout(botTurn, (rolled ? BOT_ROLL : BOT_MS) * botMul);
+}
+function handle(route, a) {
+  if (route === 'join') {
+    if (R.phase !== 'lobby') {
+      const q = R.players.find(x => !x.bot && !x.out && x.name.toLowerCase() === String(a.name || '').trim().toLowerCase());
+      if (!q) return { err: 'Game in progress. To rejoin a saved game, type the same name you played with.' }
+      push(R); return { code: R.code, id: q.id, key: q.key };
+    }
+    if (R.players.length >= 6) return { err: 'Room is full (6 players)' };
+    const p = addPlayer(R, a.name); push(R); return { code: R.code, id: p.id, key: p.key };
+  }
+  const p = R.players.find(p => p.key === a.key); if (!p) return { err: 'Unknown player' };
+  if (route === 'settings') {
+    if (p.id !== R.host || R.phase !== 'lobby') return { err: 'Only the host can change settings in the lobby' };
+    const s = a.set || {};
+    if ('cash' in s) R.set.cash = Math.min(20000, Math.max(100, +s.cash || 1500));
+    if ('salary' in s) R.set.salary = Math.min(1000, Math.max(0, +s.salary || 0));
+    if ('jackpot' in s) R.set.jackpot = !!s.jackpot;
+    if ('auction' in s) R.set.auction = !!s.auction;
+    if ('timer' in s) R.set.timer = [0, 30, 45, 60].includes(+s.timer) ? +s.timer : 30;
+    push(R); return {};
+  }
+  if (route === 'rematch') {
+    if (p.id !== R.host || R.phase !== 'over') return { err: 'Only the host can start a rematch once the game is over' };
+    Object.assign(R, { own: {}, mort: {}, hs: {}, turn: 0, phase: 'lobby', dice: [0, 0], dbl: 0, debt: null, auc: null, trade: null, winner: null, pot: 0, log: [] });
+    R.dl = null; R.tn = 0; R.players.forEach(q => Object.assign(q, { money: R.set.cash, pos: 0, jail: false, jt: 0, jf: 0, out: false, afk: 0 })); push(R); return {};
+  }
+  if (route === 'addBot') {
+    if (p.id !== R.host) return { err: 'Only the host can add bots' };
+    if (R.phase !== 'lobby') return { err: 'Game already started' };
+    if (R.players.length >= 6) return { err: 'Room is full (6 players)' };
+    const b = addPlayer(R, 'Bot ' + BOTS[R.players.length % BOTS.length]); b.bot = true; push(R); return {};
+  }
+  if (route === 'start') {
+    if (p.id !== R.host) return { err: 'Only the host can start' };
+    if (R.players.length < 2) return { err: 'Need at least 2 players' };
+    R.players.forEach(q => q.money = R.set.cash); R.turn = rnd(R.players.length) - 1; R.phase = 'roll'; say(R, 'Game started. Good luck!'); push(R); return {};
+  }
+  const err = act(R, p, a);
+  if (!err && R.players[R.turn] === p && ['roll', 'buy', 'pass', 'end', 'payJail', 'jailCard', 'payDebt'].includes(a.type)) p.afk = 0;
+  push(R); return err ? { err } : {};
+}
+bc.onmessage = ({ data: m }) => {
+  if (m.k === 'view') { if (ses && !ses.host && m.code === ses.code) { S = m.v; render(); } return; }
+  if (m.k === 'reply') { if (pend[m.req]) pend[m.req](m.j); return; }
+  if (m.k === 'lobbyinfo') { found[m.code] = { ...m, t: Date.now() }; renderLobbies(); return; }
+  if (m.k === 'discover') { if (R && R.phase === 'lobby') bc.postMessage({ k: 'lobbyinfo', code: R.code, host: R.players.find(p => p.id === R.host).name, n: R.players.length, set: R.set }); return; }
+  if (!R || m.code !== R.code) return;
+  if (m.k === 'sync') push(R);
+  else if (['join', 'start', 'act', 'addBot', 'settings', 'rematch'].includes(m.k)) bc.postMessage({ k: 'reply', req: m.req, j: handle(m.k, m) });
+};
+function post(route, body) {
+  return new Promise(res => {
+    const done = j => { if (j.err) toast(j.err); res(j); };
+    if (R && (body.code || '').toUpperCase() === R.code) return done(handle(route, body));
+    const req = uid(), t = setTimeout(() => { delete pend[req]; done({ err: 'Room not found. Keep the host tab open in this same browser.' }); }, 1500);
+    pend[req] = j => { clearTimeout(t); delete pend[req]; done(j); };
+    bc.postMessage({ ...body, k: route, req, code: (body.code || '').toUpperCase() });
+  });
+}
+const send = a => post('act', { ...a, code: ses.code, key: ses.key });
+function create(name) {
+  const AL = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let c; do c = Array.from({ length: 4 }, () => AL[rnd(AL.length) - 1]).join(''); while (localStorage['mono-' + c]);
+  R = { code: c, players: [], own: {}, mort: {}, turn: 0, phase: 'lobby', dice: [0, 0], dbl: 0, log: [], debt: null, winner: null, set: { ...DEF }, pot: 0, rolls: 0, auc: null, trade: null, hs: {} };
+  const p = addPlayer(R, name); R.host = p.id; ses = { code: c, id: p.id, key: p.key, host: 1 };
+  sessionStorage.setItem('s', JSON.stringify(ses)); push(R);
+}
+async function enter(route) {
+  const name = $('#nm').value.trim();
+  if (route === 'create') return create(name);
+  const j = await post('join', { name, code: $('#cd').value.trim() });
+  if (!j.err) { ses = j; sessionStorage.setItem('s', JSON.stringify(ses)); bc.postMessage({ k: 'sync', code: ses.code }); }
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const fix = o => { o.set = { ...DEF, ...(o.set || {}) }; o.pot = o.pot || 0; o.rolls = o.rolls || 0; o.logN = o.logN || o.log.length; o.hs = o.hs || {}; o.dl = null; o.players.forEach(p => p.afk = p.afk || 0); return o; };
+let zoomOn = localStorage.zoom !== '0', zoomLv = +(localStorage.zl || (innerWidth < 700 ? 3.2 : 2.4)), focus = null, lastRolls = -1, dt, holdUntil = 0, lastTurn = '';
+const disp = {}, goal = {}, moving = {}, jump = {}, FACES = [[], [4], [0, 8], [0, 4, 8], [0, 2, 6, 8], [0, 2, 4, 6, 8], [0, 2, 3, 5, 6, 8]];
+const cell = k => k === 1 ? .07 : k === 11 ? .93 : .14 + .08 * (k - 2) + .04;
+function pos(i) { return i <= 10 ? [11, 11 - i] : i <= 20 ? [21 - i, 1] : i <= 30 ? [1, i - 19] : [i - 29, 11]; }
+const xy = i => { const [r, c] = pos(i); return [cell(c), cell(r)]; };
+const busy = () => Date.now() < holdUntil || Object.values(moving).some(Boolean);
+const die = n => `<div class=die>${[0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => `<i${FACES[n].includes(i) ? ' class=on' : ''}></i>`).join('')}</div>`;
+let evSeen = null, cardSeen = null, popOn = false; const popQ = [];
+let logSeen = null; const feedQ = [];
+function resetUI() { lastTurn = ''; feedQ.length = 0; logSeen = null; popQ.length = 0; evSeen = cardSeen = null; for (const o of [disp, goal, moving, jump]) for (const k in o) delete o[k]; lastRolls = -1; focus = null; holdUntil = 0; }
+function resume(o) {
+  R = fix(o); const h = R.players.find(p => p.id === R.host); ses = { code: R.code, id: h.id, key: h.key, host: 1 };
+  sessionStorage.setItem('s', JSON.stringify(ses)); S = null; R.dl = null; push(R);
+}
+function leave() { sessionStorage.removeItem('s'); ses = S = R = null; clearTimeout(bt); resetUI(); render(); }
+function saveFile() {
+  if (!R) return toast('Only the host can save to a file');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(R)], { type: 'application/json' }));
+  a.download = `monopoly-${R.code}.json`; a.click(); toast('Saved to a file. It also autosaves in this browser.');
+}
+document.addEventListener('click', e => {
+  const u = e.target.closest('[data-u]'); if (u) return ui(u.dataset.u, u);
+  const t = e.target.closest('[data-a]'); if (t && t.dataset.a === 'bankrupt' && !confirm('Declare bankruptcy? You will be out of the game.')) return;
+  if (t) send({ type: t.dataset.a, i: +t.dataset.i, amt: +t.dataset.amt });
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.s) post('settings', { code: ses.code, key: ses.key, set: { [t.dataset.s]: t.type === 'checkbox' ? t.checked : +t.value } });
+  else if (t.id === 'bs') { botMul = +t.value; localStorage.bs = t.value; }
+  else if (t.id === 'zl') { zoomLv = +t.value; localStorage.zl = zoomLv; cam(); }
+  else if (t.id === 'lf') { const f = t.files[0]; if (f) f.text().then(x => { try { resetUI(); resume(JSON.parse(x)); } catch { toast('That file is not a Monopoly save'); } }); }
+});
+function ui(k, el) {
+  if (k === 'focus') { focus = focus === el.dataset.id ? null : el.dataset.id; cam(); side(); }
+  else if (k === 'zoom') { zoomOn = !zoomOn; localStorage.zoom = zoomOn ? 1 : 0; focus = null; cam(); side(); }
+  else if (k === 'joinlobby') joinCode(el.dataset.c);
+  else if (k === 'trade') openTrade();
+  else if (k === 'save') saveFile();
+  else if (k === 'menu') { if (S && S.phase !== 'lobby' && S.phase !== 'over' && !confirm('Leave this game? ' + (ses.host ? 'It is autosaved. Resume it from the main menu.' : 'You can rejoin later with the same name.'))) return; leave(); }
+  else if (k === 'deed') showPop(deedHtml({ i: +el.dataset.i, who: null }), 6000);
+  else if (k === 'mute') { muted = !muted; localStorage.mute = muted ? 1 : 0; $('#mb') && ($('#mb').textContent = muted ? '🔇' : '🔊'); }
+  else if (k === 'rematch') post('rematch', { code: ses.code, key: ses.key });
+  else if (k === 'resume') { try { const o = JSON.parse(localStorage[el.dataset.c]); resetUI(); resume(o); } catch { toast('Could not open that save'); } }
+  else if (k === 'del') { if (confirm('Delete this saved game?')) { delete localStorage[el.dataset.c]; render(); } }
+}
+const side_ = i => i % 10 === 0 ? 'c' : i < 10 ? 'b' : i < 20 ? 'l' : i < 30 ? 't' : 'r';
+function sq(s, i) {
+  const [r, c] = pos(i), o = S.own[i] && who(S.own[i]), k = side_(i), t = s.t; let h;
+  if (t === 'p') h = `<div class=bar style="background:${s.c}">${(S.hs[i] || 0) === 5 ? '<i class=ht></i>' : '<i class=hs></i>'.repeat(S.hs[i] || 0)}</div><div class=nm>${s.n}</div><div class=pr>$${s.p}</div>`;
+  else if (t === 'r') h = `<div class=nm>${s.n}</div><div class=ic>🚂</div><div class=pr>$${s.p}</div>`;
+  else if (t === 'u') h = `<div class=nm>${s.n}</div><div class=ic>${s.n === 'Water Works' ? '🚰' : '💡'}</div><div class=pr>$${s.p}</div>`;
+  else if (t === 'c') h = `<div class=nm>${s.n}</div><div class=ic style="color:${s.n === 'Chance' ? '#f58220' : '#2b8fd0'}">${s.n === 'Chance' ? '?' : '📦'}</div>`;
+  else if (t === 'x') h = `<div class=nm>${s.n}</div><div class=ic>${s.a === 200 ? '💵' : '💍'}</div><div class=pr>PAY $${s.a}</div>`;
+  else h = { go: '<small>COLLECT $' + S.set.salary + ' SALARY AS YOU PASS</small><b class=go>GO</b>➡️', jail: '<small>JUST VISITING</small><b>JAIL</b>⛓️', free: '<b>Free Parking</b>🚗' + (S.set.jackpot ? `<small>JACKPOT $${S.pot}</small>` : ''), gtj: '<b>Go To Jail</b>👮' }[t];
+  return `<div class="sq k-${side_(i)}${S.mort[i] ? ' m' : ''}" style="grid-area:${r}/${c}"${['p', 'r', 'u'].includes(t) ? ` data-u=deed data-i=${i}` : ''}><div class="in${k === 'c' ? ' cn' : ''}">${h}${o ? `<div class=own style="background:${o.color}"></div>` : ''}</div></div>`;
+}
+function home(A) {
+  const saves = Object.keys(localStorage).filter(k => k.startsWith('mono-')).map(k => { try { return [k, JSON.parse(localStorage[k])]; } catch { return null; } })
+    .filter(x => x && x[1].phase !== 'lobby').sort((a, b) => (b[1].ts || 0) - (a[1].ts || 0));
+  A.innerHTML = `<div class=lobby><h1>Monopoly</h1><input id=nm placeholder="Your name" maxlength=16 value="${esc(localStorage.nm || '')}">
+    <button id=mk>Create a game</button><p>Or join a friend's game with their room code:</p>
+    <input id=cd placeholder="Room code" maxlength=4><button class=alt id=jn>Join game</button>
+    <h3>Open lobbies</h3><div id=lobbies></div>
+    ${saves.length ? '<h3>Saved games</h3>' + saves.map(([k, o]) => `<div class=pl style="border-color:#888;margin:6px 0;flex-wrap:wrap"><span>${o.code} · ${o.players.map(p => esc(p.name)).join(', ')}${o.phase === 'over' ? ' (finished)' : ''}</span><b><button class="sm" data-u=resume data-c="${k}">Resume</button> <button class="sm alt" data-u=del data-c="${k}">✕</button></b></div>`).join('') + '<p style="font-size:13px;opacity:.8">To rejoin a resumed game, friends open the page, type the same name they played with and the room code.</p>' : ''}
+    <p><button class="alt sm" onclick="document.getElementById('lf').click()">Load a save file…</button><input type=file id=lf accept=.json hidden></p></div>`;
+  $('#nm').oninput = e => localStorage.nm = e.target.value; $('#mk').onclick = () => enter('create'); $('#jn').onclick = () => enter('join');
+  bc.postMessage({ k: 'discover' }); renderLobbies();
+}
+function renderLobbies() {
+  const el = $('#lobbies'); if (!el) return; const t = Date.now();
+  for (const c in found) if (t - found[c].t > 5000) delete found[c];
+  const L = Object.values(found);
+  el.innerHTML = L.length ? L.map(l => `<div class=pl style="border-color:#2e86ab;margin:6px 0"><span>${esc(l.host)}'s game · <b style="margin:0">${l.code}</b><br><small>${l.n}/6 players · $${l.set.cash} start${l.set.jackpot ? ' · jackpot' : ''}${l.set.auction ? ' · auctions' : ''}</small></span><b><button class=sm data-u=joinlobby data-c=${l.code} ${l.n >= 6 ? 'disabled' : ''}>Join</button></b></div>`).join('')
+    : '<p style="opacity:.7;font-size:13px;margin:4px 0">Searching… no open lobbies found in this browser yet.</p>';
+}
+async function joinCode(code) {
+  const name = $('#nm').value.trim(); if (!name) return toast('Type your name first');
+  const j = await post('join', { name, code }); if (!j.err) { ses = j; sessionStorage.setItem('s', JSON.stringify(ses)); bc.postMessage({ k: 'sync', code: ses.code }); }
+}
+setInterval(() => { if (!S && $('#lobbies')) { bc.postMessage({ k: 'discover' }); renderLobbies(); } }, 2000);
+function lobby(A) {
+  const host = S.host === ses.id, s = S.set;
+  const sel = (k, opts, f) => host ? `<select data-s=${k}>${opts.map(o => `<option value=${o} ${o == s[k] ? 'selected' : ''}>${f(o)}</option>`).join('')}</select>` : `<b>${f(s[k])}</b>`;
+  const chk = (k, label) => host ? `<label class=ck><input type=checkbox data-s=${k} ${s[k] ? 'checked' : ''}> ${label}</label>` : `<div>${s[k] ? '✔' : '✘'} ${label}</div>`;
+  A.innerHTML = `<div class=lobby><h1>Waiting room</h1><div>Room code — share it with friends in this browser:</div><div class=code>${S.code}</div>
+    ${S.players.map(p => `<div class=pl style="border-color:${p.color};margin:6px 0">${p.bot ? '🤖 ' : ''}${esc(p.name)}${p.id === ses.id ? ' (you)' : ''}</div>`).join('')}
+    <h3>Game settings</h3><div class=set><label>Starting money ${sel('cash', [500, 1000, 1500, 2000, 5000], v => '$' + v)}</label>
+    <label>Salary for passing GO ${sel('salary', [0, 100, 200, 300, 400], v => '$' + v)}</label>
+    <label>Turn timer ${sel('timer', [0, 30, 45, 60], v => v ? v + ' seconds' : 'Off')}</label>
+    ${chk('jackpot', 'Free Parking jackpot (taxes go in the pot)')}${chk('auction', 'Auction a property when someone passes on it')}</div>
+    ${host ? `<div class=row><button class=alt id=ab ${S.players.length >= 6 ? 'disabled' : ''}>Add bot</button><button id=go ${S.players.length < 2 ? 'disabled' : ''}>Start game</button></div>` : '<p>Waiting for the host to start…</p>'}</div>`;
+  if ($('#ab')) $('#ab').onclick = () => post('addBot', { code: ses.code, key: ses.key });
+  if ($('#go')) $('#go').onclick = () => post('start', { code: ses.code, key: ses.key });
+}
+function build(A) {
+  A.innerHTML = `<div class=game><div class=stage id=st><div class=board id=bd><div class=mid><div class=ban>MONOPOLY</div><div class="deck cc">COMMUNITY CHEST<b>📦</b></div><div class="deck ch">CHANCE<b>?</b></div></div><div class=tl id=tl></div></div>
+    <div class=feed id=feed></div><div class=hud><div class=top><div class=hd id=hd></div><div class=dice id=dice></div></div><div class=tmr id=tmr><i id=tbar></i><span id=tsec></span></div><div class=row id=acts></div></div></div>
+    <aside><div id=pl></div><div id=tr></div>
+    <div class=row><button class="sm alt" data-u=trade>🤝 Trade</button><button class="sm alt" data-u=zoom id=zb></button><select id=zl title="Zoom level"><option value=1.8>Zoom 1.8×</option><option value=2.4>Zoom 2.4×</option><option value=3.2>Zoom 3.2×</option></select>
+    ${ses.host ? '<button class="sm alt" data-u=save>💾 Save</button><select id=bs title="Bot speed"><option value=1>Bots: normal</option><option value=.4>Bots: fast</option><option value=.12>Bots: very fast</option></select>' : ''}<button class="sm alt" data-u=mute id=mb></button><button class="sm alt" data-u=menu>Menu</button></div>
+    <div class="hint keys" style="color:#9fb3c8">Space = main action · Z = zoom · M = mute · click any square for its card</div>
+    <div id=pp></div><div class=log id=log></div><form id=cf><input id=ci placeholder="Chat with players" autocomplete=off></form></aside></div><div id=tm class=modal></div>`;
+  $('#zl').value = zoomLv; if ($('#bs')) $('#bs').value = localStorage.bs || '1'; $('#mb').textContent = muted ? '🔇' : '🔊'; $('#cf').onsubmit = e => { e.preventDefault(); if ($('#ci').value.trim()) send({ type: 'chat', text: $('#ci').value }); $('#ci').value = ''; };
+}
+function render() {
+  const A = $('#app');
+  if (!S) return home(A);
+  if (S.phase === 'lobby') { resetUI(); document.title = 'Monopoly (browser only)'; return lobby(A); }
+  if (!$('#st')) build(A);
+  S.players.forEach(p => { if (disp[p.id] == null) { disp[p.id] = p.pos; goal[p.id] = p.pos; } });
+  $('#bd').querySelectorAll('.sq').forEach(e => e.remove()); $('#bd').insertAdjacentHTML('afterbegin', B.map(sq).join(''));
+  if (S.rolls !== lastRolls && lastRolls >= 0 && S.dice[0]) { holdUntil = Date.now() + 900; setTimeout(hud, 950); }
+  showDice(); events(); feedEvents();
+  S.players.forEach(p => { goal[p.id] = p.pos; jump[p.id] = p.jail && p.pos === 10; if (disp[p.id] !== p.pos) walk(p.id); });
+  if (!S.winner && lastTurn !== S.turn) { if (lastTurn !== '' && S.players[S.turn].id === ses.id) SND.turn(); lastTurn = S.turn; }
+  document.title = !S.winner && S.players[S.turn].id === ses.id ? '🎲 Your turn! · Monopoly' : 'Monopoly (browser only)';
+  tokens(); side(); hud(); cam();
+}
+let ac, muted = localStorage.mute === '1';
+function beep(f, d = .12, type = 'sine', v = .07, delay = 0) {
+  if (muted) return;
+  try { ac = ac || new AudioContext(); const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.value = f; g.gain.value = v; o.connect(g); g.connect(ac.destination);
+    const t = ac.currentTime + delay; o.start(t); g.gain.exponentialRampToValueAtTime(.0001, t + d); o.stop(t + d); } catch {}
+}
+const SND = { dice: () => [0, 1, 2, 3, 4, 5].forEach(i => beep(160 + rnd(140), .05, 'square', .035, i * .09)), buy: () => { beep(660, .1); beep(880, .2, 'sine', .07, .1); },
+  rent: () => { beep(320, .14, 'sawtooth', .04); beep(210, .22, 'sawtooth', .04, .12); }, card: () => { beep(520, .1, 'triangle'); beep(700, .14, 'triangle', .07, .09); },
+  turn: () => { beep(784, .1); beep(988, .18, 'sine', .07, .11); }, jail: () => beep(110, .45, 'sawtooth', .05), go: () => { beep(523, .08); beep(659, .08, 'sine', .07, .08); beep(784, .14, 'sine', .07, .16); }, bid: () => beep(440, .08, 'triangle') };
+const ICON_SND = { '🏠': 'buy', '💸': 'rent', '⛓️': 'jail', '💥': 'jail', '➡️': 'go', '🎰': 'go', '🔨': 'bid', '🤝': 'card' };
+addEventListener('keydown', e => {
+  if (!S || !$('#st') || /INPUT|SELECT|TEXTAREA|BUTTON/.test(e.target.tagName) || e.ctrlKey || e.metaKey) return;
+  if (e.key === ' ' || e.key === 'Enter') { const b = document.querySelector('#acts button:not([disabled])'); if (b) { e.preventDefault(); b.click(); } }
+  else if (e.key === 'z' || e.key === 'Z') ui('zoom'); else if (e.key === 'm' || e.key === 'M') ui('mute');
+});
+const worth = p => p.money + Object.keys(S.own).filter(i => S.own[i] === p.id).reduce((t, i) => t + (S.mort[i] ? B[i].p / 2 : B[i].p) + (S.hs[i] || 0) * (B[i].h || 0), 0);
+function events() {
+  const en = S.ev ? S.ev.n : 0, cn = S.cardEv ? S.cardEv.n : 0;
+  if (evSeen === null) { evSeen = en; cardSeen = cn; return; }
+  if (cn !== cardSeen) { cardSeen = cn; popQ.push({ card: S.cardEv }); }
+  if (en !== evSeen) { evSeen = en; popQ.push({ deed: S.ev }); }
+  if (popQ.length > 6) popQ.splice(0, popQ.length - 6);
+}
+const fg = c => { const n = parseInt(c.slice(1), 16); return ((n >> 16) * .3 + ((n >> 8) & 255) * .59 + (n & 255) * .11) > 140 ? '#000' : '#fff'; };
+function deedHtml(ev) {
+  const s = B[ev.i], o = S.own[ev.i] && who(S.own[ev.i]), pl = ev.who && who(ev.who), n = (S.hs || {})[ev.i] || 0; let head, body;
+  if (s.t === 'p') {
+    const L = ['', '1 house', '2 houses', '3 houses', '4 houses', 'Hotel'];
+    head = `<div class=dh style="background:${s.c};color:${fg(s.c)}"><small>TITLE DEED</small><b>${s.n.toUpperCase()}</b></div>`;
+    body = `<div>Rent <b>$${s.rt[0]}</b></div><div>Full colour set <b>$${s.rt[0] * 2}</b></div>` + s.rt.slice(1).map((v, k) => `<div${n === k + 1 ? ' style="background:#ffe9a8"' : ''}>${L[k + 1]} <b>$${v}</b></div>`).join('') + `<div>House / hotel cost <b>$${s.h}</b></div><div>Mortgage value <b>$${s.p / 2}</b></div><div>Price <b>$${s.p}</b></div>`;
+  } else if (s.t === 'r') { head = `<div class=dh style="background:#222;color:#fff"><small>RAILROAD</small><b>${s.n.toUpperCase()}</b></div>`;
+    body = `<div>Rent <b>$25</b></div><div>If 2 owned <b>$50</b></div><div>If 3 owned <b>$100</b></div><div>If 4 owned <b>$200</b></div><div>Mortgage value <b>$100</b></div>`; }
+  else { head = `<div class=dh style="background:#9aa5ad;color:#000"><small>UTILITY</small><b>${s.n.toUpperCase()}</b></div>`;
+    body = `<div>One utility owned: <b>4×</b> dice roll</div><div>Both owned: <b>10×</b> dice roll</div><div>Mortgage value <b>$75</b></div><div>Price <b>$150</b></div>`; }
+  const own = o ? 'Owned by ' + esc(o.name) + (S.mort[ev.i] ? ' (mortgaged)' : '') + (pl && o.id !== pl.id ? ' — rent due' : '') : 'Unowned — available to buy';
+  return `<div class=cap>${pl ? esc(pl.name) + ' landed on' : 'Property card'}</div>${head}<div class=db style="font-size:12px;line-height:1.45">${body}</div><div class=ow>${own}</div>`;
+}
+function cardHtml(c) {
+  const ch = c.kind === 'Chance';
+  return `<div class=cap>${esc(who(c.who).name)} drew a card</div><div class=cd style="background:${ch ? '#f58220' : '#4aa7dd'}"><small>${c.kind.toUpperCase()}</small><div class=big>${ch ? '?' : '📦'}</div></div><div class=db style="font-size:15px;padding:14px 12px"><b>${esc(c.text)}</b></div>`;
+}
+function showPop(html, ms, cb) {
+  const el = document.createElement('div'); el.className = 'popup'; el.title = 'Click to dismiss'; el.innerHTML = html; $('#st').appendChild(el);
+  const done = () => { el.remove(); cb && cb(); cb = null; }; el.onclick = done; setTimeout(done, ms);
+}
+function drain() {
+  if (popOn || !popQ.length || !S || !$('#st') || busy()) return;
+  const q = popQ.shift(); popOn = true; if (q.card) SND.card();
+  showPop(q.card ? cardHtml(q.card) : deedHtml(q.deed), q.card ? 3800 : 3200, () => popOn = false);
+}
+setInterval(drain, 250);
+const RULES = [[/ bought /, '🏠'], [/ pays \$\d+ rent/, '💸'], [/ wins .* for \$/, '🔨'], [/^Auction for/, '🔨'], [/ bids \$/, '🔨'], [/ folds\./, '🔨'], [/^Nobody bid/, '🔨'],
+  [/ (offers a trade|complete a trade|declines the trade|cancels the trade)/, '🤝'], [/mortgaged/, '🏦'], [/bankrupt/, '💥'], [/jail|Three doubles/, '⛓️'], [/passes GO/, '➡️'], [/jackpot/, '🎰'], [/ owes \$/, '⚠️']];
+function classify(m) {
+  const chat = S.players.find(p => m.startsWith(p.name + ': ')); let ic = chat ? '💬' : null;
+  if (!ic) for (const [re, i] of RULES) if (re.test(m)) { ic = i; break; }
+  if (!ic) return null;
+  const pl = [...S.players].sort((a, b) => b.name.length - a.name.length).find(p => m.startsWith(p.name));
+  return { ic, m, c: pl ? pl.color : '#8899aa' };
+}
+function feedEvents() {
+  const n = S.logN || 0; if (logSeen === null || n < logSeen) { logSeen = n; return; }
+  const k = Math.min(n - logSeen, S.log.length); logSeen = n;
+  if (k > 0) S.log.slice(-k).forEach(m => { const f = classify(m); if (f) feedQ.push(f); });
+  if (feedQ.length > 12) feedQ.splice(0, feedQ.length - 12);
+}
+function feedDrain() {
+  const fd = $('#feed'); if (!S || !fd || busy() || !feedQ.length) return;
+  const f = feedQ.shift(), el = document.createElement('div'); el.className = 'fi'; el.style.borderColor = f.c; el.innerHTML = `<span>${f.ic}</span> ${esc(f.m)}`;
+  SND[ICON_SND[f.ic]] && SND[ICON_SND[f.ic]](); fd.appendChild(el); while (fd.children.length > 5) fd.firstChild.remove(); setTimeout(() => el.remove(), 6500);
+}
+setInterval(feedDrain, 450);
+let lastTick = 0;
+function tickUI() {
+  const el = $('#tmr'); if (!el || !S) return; const d = S.dl;
+  if (!d || S.phase === 'lobby' || S.winner || !who(d.id)) { el.style.visibility = 'hidden'; return; }
+  const rem = Math.max(0, (d.t - Date.now()) / 1000), sh = Math.min(d.s, rem);
+  el.style.visibility = 'visible'; $('#tbar').style.width = (sh / d.s * 100) + '%'; $('#tbar').style.background = sh < 10 ? '#e8473b' : '#3bb273';
+  $('#tsec').textContent = (d.id === ses.id ? 'You' : who(d.id).name.slice(0, 12)) + ' · ' + Math.ceil(sh) + 's';
+  if (d.id === ses.id && sh > 0 && sh <= 5 && Math.ceil(sh) !== lastTick) { lastTick = Math.ceil(sh); beep(880, .05, 'square', .04); }
+}
+setInterval(tickUI, 250);
+function showDice() {
+  const el = $('#dice'); if (S.rolls === lastRolls) return;
+  const first = lastRolls < 0; lastRolls = S.rolls; clearInterval(dt);
+  const fin = () => { el.classList.remove('roll'); el.innerHTML = S.dice[0] ? die(S.dice[0]) + die(S.dice[1]) : ''; };
+  if (first || !S.dice[0]) return fin();
+  SND.dice(); el.classList.add('roll'); let n = 0; dt = setInterval(() => { el.innerHTML = die(rnd(6)) + die(rnd(6)); if (++n > 9) { clearInterval(dt); fin(); } }, 80);
+}
+async function walk(id) {
+  if (moving[id]) return; moving[id] = 1;
+  await sleep(Math.max(0, holdUntil - Date.now()));
+  while (disp[id] !== goal[id]) {
+    const c = disp[id], t = goal[id], f = (t - c + 40) % 40;
+    disp[id] = jump[id] || (f > 12 && f < 37) ? t : f >= 37 ? (c + 39) % 40 : (c + 1) % 40;
+    tokens(); cam(); await sleep(disp[id] === t ? 450 : 170);
+  }
+  moving[id] = 0; hud();
+}
+function tokens() {
+  const tl = $('#tl'), at = {}; if (!tl) return;
+  S.players.filter(p => !p.out).forEach(p => (at[disp[p.id]] = at[disp[p.id]] || []).push(p.id));
+  S.players.forEach(p => {
+    let el = document.getElementById('tk-' + p.id);
+    if (!el) { el = document.createElement('div'); el.id = 'tk-' + p.id; el.className = 'tok'; tl.appendChild(el); }
+    el.style.display = p.out ? 'none' : 'flex'; el.style.background = p.color; el.textContent = p.bot ? '🤖' : p.name[0].toUpperCase(); el.title = p.name;
+    const g = at[disp[p.id]] || [p.id], k = g.indexOf(p.id), [x, y] = xy(disp[p.id]);
+    el.style.left = (x + (k - (g.length - 1) / 2) * .03) * 100 + '%'; el.style.top = (y + (k % 2 ? .012 : -.012)) * 100 + '%';
+    el.classList.toggle('now', S.players[S.turn].id === p.id && !S.winner);
+  });
+}
+function cam() {
+  const st = $('#st'); if (!S || !st || !$('#bd')) return;
+  const size = st.clientWidth, fid = focus || (zoomOn && !S.winner ? S.players[S.turn].id : null); let z = 1, x = .5, y = .5;
+  if (fid && who(fid)) { z = zoomLv; [x, y] = xy(disp[fid] != null ? disp[fid] : who(fid).pos); }
+  const tx = Math.min(0, Math.max(size - size * z, size * .5 - x * size * z)), ty = Math.min(0, Math.max(size - size * z, size * (innerWidth < 700 ? .3 : .4) - y * size * z));
+  $('#bd').style.transform = `translate(${tx}px,${ty}px) scale(${z})`;
+  document.querySelector('.hud').classList.toggle('center', z === 1);
+}
+addEventListener('resize', () => cam());
+function side() {
+  const me = who(ses.id), nm = id => esc(who(id).name);
+  $('#pl').innerHTML = S.players.map((p, i) => `<div class="pl${i === S.turn && !S.winner ? ' now' : ''}${p.out ? ' out' : ''}${focus === p.id ? ' foc' : ''}" data-u=focus data-id=${p.id} style="border-color:${p.color};margin-bottom:6px;cursor:pointer" title="Click to zoom to this player">${p.bot ? '🤖 ' : ''}${esc(p.name)}${p.id === ses.id ? ' (you)' : ''}${p.jail ? ' ⛓️' : ''}${p.jf ? ' 🎟️' : ''}${p.afk ? ` <span title="Missed turns in a row. 6 means removal" style="color:#ffb4a9">⏰${p.afk}/6</span>` : ''}<small style="opacity:.7;margin-left:6px" title="Cash + property + buildings">net $${worth(p)}</small><b>$${p.money}</b></div>`).join('') + (S.set.jackpot ? `<div class=hint>Free Parking jackpot: $${S.pot}</div>` : '');
+  const d = x => [x.cash ? '$' + x.cash : '', ...x.props.map(i => B[i].n)].filter(Boolean).join(', ') || 'nothing';
+  $('#tr').innerHTML = S.trade ? `<div class=tr><b>Trade offer</b><div>${nm(S.trade.from)} gives: ${d(S.trade.give)}</div><div>${nm(S.trade.to)} gives: ${d(S.trade.get)}</div>${S.trade.to === ses.id ? '<div class=row><button data-a=tAccept>Accept</button><button class=alt data-a=tDecline>Decline</button></div>' : S.trade.from === ses.id ? '<div><button class="alt sm" data-a=tDecline>Cancel offer</button></div>' : ''}</div>` : '';
+  $('#zb').textContent = zoomOn ? '🔍 Auto-zoom: on' : '🔍 Auto-zoom: off';
+  const mine = Object.keys(S.own).map(Number).filter(i => S.own[i] === ses.id).sort((x, y) => x - y), hs = i => (S.hs || {})[i] || 0;
+  const gi = i => B[i].c ? B.map((q, j) => j).filter(j => B[j].c === B[i].c) : [i];
+  $('#pp').innerHTML = mine.length ? '<b>Your properties</b>' + mine.map(i => {
+    const s = B[i], m = S.mort[i], mono = s.c && gi(i).every(j => S.own[j] === ses.id), n = hs(i), any = gi(i).some(j => hs(j));
+    const bld = s.t === 'p' && mono && !m ? `<button class="sm" data-a=build data-i=${i} title="Build for $${s.h}">＋$${s.h}</button><button class="sm alt" data-a=sellHouse data-i=${i} ${n ? '' : 'disabled'} title="Sell for $${s.h / 2}">－</button>` : '';
+    return `<div class=pp><span style="background:${s.c || '#888'}"></span><em>${s.n}${m ? ' (mortgaged)' : ''}${n ? ' · ' + (n === 5 ? '🏨' : '🏠'.repeat(n)) : ''}</em>${bld}<button class="sm alt" data-a="${m ? 'unmortgage' : 'mortgage'}" data-i=${i} ${any && !m ? 'disabled' : ''}>${m ? 'Unmortgage $' + Math.ceil(s.p / 2 * 1.1) : 'Mortgage +$' + s.p / 2}</button></div>`; }).join('') : '';
+  $('#log').innerHTML = S.log.slice(-30).reverse().map(l => `<div>${esc(l)}</div>`).join('');
+}
+function hud() {
+  if (!S || S.phase === 'lobby' || !$('#hd')) return;
+  const p = S.players[S.turn], mine = p.id === ses.id, ph = S.phase, me = who(ses.id), nm = id => esc(who(id).name); let acts = '', hd;
+  if (S.winner) { hd = nm(S.winner) + ' wins! 🏆'; acts = (ses.host ? '<button data-u=rematch>Play again</button>' : '') + '<button class=alt data-u=menu>Menu</button>'; }
+  else if (ph === 'auction') {
+    const u = S.auc, a = u.left[u.at]; hd = `Auction: ${B[u.i].n} · bid $${u.bid}${u.hi ? ' (' + nm(u.hi) + ')' : ''}`;
+    if (a === ses.id) acts = [10, 50, 100].map(n => `<button data-a=bid data-amt=${u.bid + n} ${me.money < u.bid + n ? 'disabled' : ''}>Bid $${u.bid + n}</button>`).join('') + '<button class=alt data-a=fold>Fold</button>';
+    else hd += ` — ${nm(a)} to act`;
+  } else {
+    hd = mine ? 'Your turn' : esc(p.name) + "'s turn";
+    if (mine && !busy()) {
+      if (ph === 'roll') acts = p.jail ? `<button data-a=roll>Roll for doubles</button><button class=alt data-a=payJail>Pay $50</button>${p.jf ? '<button class=alt data-a=jailCard>Use jail card</button>' : ''}` : '<button data-a=roll>Roll dice</button>';
+      if (ph === 'buy') acts = `<button data-a=buy ${me.money < B[p.pos].p ? 'disabled' : ''}>Buy ${B[p.pos].n} · $${B[p.pos].p}</button><button class=alt data-a=pass>${S.set.auction ? 'Auction it' : 'Pass'}</button>`;
+      if (ph === 'end') acts = '<button data-a=end>End turn</button>';
+      if (ph === 'debt') acts = `<button data-a=payDebt ${me.money < S.debt.amt ? 'disabled' : ''}>Pay $${S.debt.amt}</button><button class=alt data-a=bankrupt>Declare bankruptcy</button>`;
+    }
+  }
+  $('#hd').innerHTML = hd; $('#acts').innerHTML = acts;
+}
+function openTrade() {
+  const others = S.players.filter(p => p.id !== ses.id && !p.out); if (!others.length) return;
+  const m = $('#tm'); m.style.display = 'flex';
+  m.innerHTML = `<div class=mbox><h3 style="margin-top:0">Propose a trade</h3><label>Trade with <select id=tp>${others.map(p => `<option value=${p.id}>${esc(p.name)}</option>`).join('')}</select></label>
+    <div class=cols><div><b>You give</b><div id=tg></div></div><div><b>You get</b><div id=tt></div></div></div><div class=row><button id=ts>Send offer</button><button class=alt id=tx>Cancel</button></div></div>`;
+  const list = (id, k) => `<label>Cash $<input type=number min=0 value=0 data-k=${k}></label>` + Object.keys(S.own).filter(i => S.own[i] === id).map(i => `<label><input type=checkbox data-k=${k} value=${i}>${B[i].n}${S.mort[i] ? ' (mortgaged)' : ''}</label>`).join('');
+  const fill = () => { $('#tg').innerHTML = list(ses.id, 'g'); $('#tt').innerHTML = list($('#tp').value, 't'); };
+  $('#tp').onchange = fill; fill(); $('#tx').onclick = () => m.style.display = 'none';
+  $('#ts').onclick = async () => {
+    const rd = k => ({ cash: +m.querySelector(`input[type=number][data-k=${k}]`).value || 0, props: [...m.querySelectorAll(`input[type=checkbox][data-k=${k}]:checked`)].map(x => +x.value) });
+    const j = await send({ type: 'trade', to: $('#tp').value, give: rd('g'), get: rd('t') }); if (!j.err) m.style.display = 'none';
+  };
+}
+if (ses && ses.host) { try { R = fix(JSON.parse(localStorage['mono-' + ses.code])); push(R); } catch { ses = null; render(); } }
+else { if (ses) bc.postMessage({ k: 'sync', code: ses.code }); render(); }
+</script></body></html>
